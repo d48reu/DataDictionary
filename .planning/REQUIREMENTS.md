@@ -122,13 +122,64 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| INGEST-01 | Phase 2 | Pending |
+| INGEST-02 | Phase 2 | Pending |
+| INGEST-03 | Phase 2 | Pending |
+| INGEST-04 | Phase 1 | Pending |
+| INGEST-05 | Phase 2 | Pending |
+| INGEST-06 | Phase 2 | Pending |
+| ENRICH-01 | Phase 3 | Pending |
+| ENRICH-02 | Phase 3 | Pending |
+| ENRICH-03 | Phase 3 | Pending |
+| ENRICH-04 | Phase 3 | Pending |
+| ENRICH-05 | Phase 3 | Pending |
+| ENRICH-06 | Phase 3 | Pending |
+| ENRICH-07 | Phase 3 | Pending |
+| ENRICH-08 | Phase 3 | Pending |
+| ENRICH-09 | Phase 3 | Pending |
+| ENRICH-10 | Phase 3 | Pending |
+| AUDIT-01 | Phase 4 | Pending |
+| AUDIT-02 | Phase 4 | Pending |
+| AUDIT-03 | Phase 4 | Pending |
+| AUDIT-04 | Phase 4 | Pending |
+| AUDIT-05 | Phase 4 | Pending |
+| DIFF-01 | Phase 5 | Pending |
+| DIFF-02 | Phase 5 | Pending |
+| DIFF-03 | Phase 5 | Pending |
+| DIFF-04 | Phase 5 | Pending |
+| DIFF-05 | Phase 5 | Pending |
+| SITE-01 | Phase 6 | Pending |
+| SITE-02 | Phase 6 | Pending |
+| SITE-03 | Phase 6 | Pending |
+| SITE-04 | Phase 6 | Pending |
+| SITE-05 | Phase 6 | Pending |
+| SITE-06 | Phase 6 | Pending |
+| SITE-07 | Phase 6 | Pending |
+| SITE-08 | Phase 6 | Pending |
+| SITE-09 | Phase 6 | Pending |
+| SITE-10 | Phase 6 | Pending |
+| SITE-11 | Phase 6 | Pending |
+| SITE-12 | Phase 6 | Pending |
+| SITE-13 | Phase 6 | Pending |
+| CLI-01 | Phase 1 | Pending |
+| CLI-02 | Phase 1 | Pending |
+| CLI-03 | Phase 2 | Pending |
+| CLI-04 | Phase 4 | Pending |
+| CLI-05 | Phase 3 | Pending |
+| CLI-06 | Phase 4 | Pending |
+| CLI-07 | Phase 5 | Pending |
+| CLI-08 | Phase 6 | Pending |
+| CLI-09 | Phase 6 | Pending |
+| CLI-10 | Phase 1 | Pending |
+| DEPLOY-01 | Phase 7 | Pending |
+| DEPLOY-02 | Phase 7 | Pending |
+| DEPLOY-03 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 43 total
-- Mapped to phases: 0
-- Unmapped: 43 (pending roadmap)
+- v1 requirements: 52 total
+- Mapped to phases: 52
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initial definition*
+*Last updated: 2026-02-24 after roadmap creation*
