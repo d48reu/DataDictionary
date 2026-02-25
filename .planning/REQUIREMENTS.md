@@ -18,16 +18,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### AI Enrichment
 
-- [ ] **ENRICH-01**: Claude API generates plain-English description for each dataset
-- [ ] **ENRICH-02**: Claude API generates practical use cases ("why a resident or journalist would care")
-- [ ] **ENRICH-03**: Claude API generates search keywords a resident would use
-- [ ] **ENRICH-04**: Claude API infers likely owning department
-- [ ] **ENRICH-05**: Claude API infers expected update frequency
-- [ ] **ENRICH-06**: Claude API assigns civic relevance score (HIGH/MEDIUM/LOW)
+- [x] **ENRICH-01**: Claude API generates plain-English description for each dataset
+- [x] **ENRICH-02**: Claude API generates practical use cases ("why a resident or journalist would care")
+- [x] **ENRICH-03**: Claude API generates search keywords a resident would use
+- [x] **ENRICH-04**: Claude API infers likely owning department
+- [x] **ENRICH-05**: Claude API infers expected update frequency
+- [x] **ENRICH-06**: Claude API assigns civic relevance score (HIGH/MEDIUM/LOW)
 - [ ] **ENRICH-07**: Enrichment supports `--dry-run` flag showing what would be enriched without calling API
 - [ ] **ENRICH-08**: Enrichment supports `--resume` flag to continue from where it left off
 - [ ] **ENRICH-09**: Enrichment shows cost estimate before running and prompts for confirmation
-- [ ] **ENRICH-10**: Enrichments stored in separate SQLite table (survives metadata re-pulls)
+- [x] **ENRICH-10**: Enrichments stored in separate SQLite table (survives metadata re-pulls)
 
 ### Quality & Audit
 
@@ -128,16 +128,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INGEST-04 | Phase 1 | Complete |
 | INGEST-05 | Phase 2 | Complete |
 | INGEST-06 | Phase 2 | Complete |
-| ENRICH-01 | Phase 3 | Pending |
-| ENRICH-02 | Phase 3 | Pending |
-| ENRICH-03 | Phase 3 | Pending |
-| ENRICH-04 | Phase 3 | Pending |
-| ENRICH-05 | Phase 3 | Pending |
-| ENRICH-06 | Phase 3 | Pending |
+| ENRICH-01 | Phase 3 | Complete |
+| ENRICH-02 | Phase 3 | Complete |
+| ENRICH-03 | Phase 3 | Complete |
+| ENRICH-04 | Phase 3 | Complete |
+| ENRICH-05 | Phase 3 | Complete |
+| ENRICH-06 | Phase 3 | Complete |
 | ENRICH-07 | Phase 3 | Pending |
 | ENRICH-08 | Phase 3 | Pending |
 | ENRICH-09 | Phase 3 | Pending |
-| ENRICH-10 | Phase 3 | Pending |
+| ENRICH-10 | Phase 3 | Complete |
 | AUDIT-01 | Phase 4 | Pending |
 | AUDIT-02 | Phase 4 | Pending |
 | AUDIT-03 | Phase 4 | Pending |

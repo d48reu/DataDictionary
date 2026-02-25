@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 3 of 7 (AI Enrichment)
-Plan: 0 of 0 in current phase
-Status: Not Started
-Last activity: 2026-02-25 -- Completed 02-03-PLAN.md (Gap closure: fix relative DB path)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-02-25 -- Completed 03-01-PLAN.md (Enrichment core module)
 
-Progress: [████░░░░░░] 36%
+Progress: [█████░░░░░] 43%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 2.4min
-- Total execution time: 0.2 hours
+- Total plans completed: 6
+- Average duration: 2.5min
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
@@ -29,15 +29,17 @@ Progress: [████░░░░░░] 36%
 |-------|-------|-------|----------|
 | 1. Foundation | 2 | 4min | 2min |
 | 2. Data Ingestion | 3 | 8min | 2.7min |
+| 3. AI Enrichment | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min), 01-02 (2min), 02-01 (3min), 02-02 (3min), 02-03 (2min)
+- Last 5 plans: 01-02 (2min), 02-01 (3min), 02-02 (3min), 02-03 (2min), 03-01 (3min)
 - Trend: Consistent
 
 *Updated after each plan completion*
 | Phase 02 P01 | 3min | 2 tasks | 5 files |
 | Phase 02 P02 | 3min | 2 tasks | 2 files |
 | Phase 02 P03 | 2min | 2 tasks | 2 files |
+| Phase 03 P01 | 3min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -62,6 +64,9 @@ Recent decisions affecting current work:
 - [02-03]: Used os.path.expanduser + os.path.join for XDG path instead of platformdirs dependency
 - [02-03]: Default DB at ~/.local/share/mdc-encyclopedia/mdc_encyclopedia.db follows XDG Base Directory Spec
 - [02-03]: Parent dir guard uses if parent: to avoid empty-string makedirs for bare filenames
+- [03-01]: Column metadata in prompts truncated at 30 entries for prompt size control
+- [03-01]: Tags field handled as both JSON array and plain string for robustness
+- [03-01]: 0.1s delay between count_tokens calls to avoid rate limiting
 
 ### Pending Todos
 
@@ -77,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 02-03-PLAN.md (Gap closure: fix relative DB path -- Phase 2 fully complete)
+Stopped at: Completed 03-01-PLAN.md (Enrichment core module: Pydantic model, prompts, client, DB helpers)
 Resume file: None

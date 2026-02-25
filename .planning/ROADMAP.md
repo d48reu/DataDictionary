@@ -66,7 +66,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Enrichment core module: Pydantic model, prompt templates, Anthropic client wrapper, DB helpers
+- [x] 03-01-PLAN.md — Enrichment core module: Pydantic model, prompt templates, Anthropic client wrapper, DB helpers
 - [ ] 03-02-PLAN.md — CLI enrich command with --dry-run, --resume, --model, cost estimation, and Rich progress
 
 ### Phase 4: Quality Audit
