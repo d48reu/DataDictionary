@@ -10,32 +10,33 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 2 of 7 (Data Ingestion)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-02-25 -- Completed 02-01-PLAN.md (Hub API client, normalizer, and database upserts)
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-02-25 -- Completed 02-02-PLAN.md (Field metadata fetcher and CLI pull command)
 
-Progress: [███░░░░░░░] 21%
+Progress: [████░░░░░░] 29%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 2.3min
-- Total execution time: 0.12 hours
+- Total plans completed: 4
+- Average duration: 2.5min
+- Total execution time: 0.17 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation | 2 | 4min | 2min |
-| 2. Data Ingestion | 1 | 3min | 3min |
+| 2. Data Ingestion | 2 | 6min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min), 01-02 (2min), 02-01 (3min)
+- Last 5 plans: 01-01 (2min), 01-02 (2min), 02-01 (3min), 02-02 (3min)
 - Trend: Consistent
 
 *Updated after each plan completion*
 | Phase 02 P01 | 3min | 2 tasks | 5 files |
+| Phase 02 P02 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -54,6 +55,9 @@ Recent decisions affecting current work:
 - [02-01]: Within-catalog dedup uses normalized title exact match per locked decision (no fuzzy matching)
 - [02-01]: Download URL constructed for Feature Services only; None for File Geodatabases
 - [02-01]: Rate limiting via time.sleep before each request ensures compliance regardless of retry state
+- [02-02]: Single ArcGIS Hub progress stage (no Socrata) since research confirmed no Socrata portal exists for Miami-Dade
+- [02-02]: Field fetch errors return empty list instead of raising -- individual dataset failures never crash the pull
+- [02-02]: Dedup panel shown by default with summary counts; --verbose shows per-pair detail
 
 ### Pending Todos
 
@@ -69,5 +73,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 02-01-PLAN.md (Hub API client, normalizer, database upserts)
+Stopped at: Completed 02-02-PLAN.md (Field metadata fetcher and CLI pull command -- Phase 2 complete)
 Resume file: None

@@ -12,8 +12,8 @@ This roadmap delivers a pipeline-of-commands CLI tool that ingests metadata from
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Python package skeleton with SQLite schema, CLI entry point, and Rich output
-- [ ] **Phase 2: Data Ingestion** - Pull full catalog metadata from Socrata and ArcGIS Hub into SQLite
+- [x] **Phase 1: Foundation** - Python package skeleton with SQLite schema, CLI entry point, and Rich output
+- [x] **Phase 2: Data Ingestion** - Pull full catalog metadata from Socrata and ArcGIS Hub into SQLite
 - [ ] **Phase 3: AI Enrichment** - Claude-powered plain-English descriptions, use cases, keywords, and civic relevance for every dataset
 - [ ] **Phase 4: Quality Audit** - Staleness detection, completeness scoring, and quality grades for every dataset
 - [ ] **Phase 5: Change Detection** - Diff between pulls identifying new, removed, and schema-changed datasets
@@ -51,7 +51,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Hub API client, normalizer, and database upserts (ingestion foundation)
-- [ ] 02-02-PLAN.md — Field metadata fetcher and CLI pull command with Rich progress/summary
+- [x] 02-02-PLAN.md — Field metadata fetcher and CLI pull command with Rich progress/summary
 
 ### Phase 3: AI Enrichment
 **Goal**: Every dataset in the catalog has AI-generated plain-English descriptions, use cases, keywords, department attribution, and civic relevance that make it understandable by a non-technical resident
@@ -138,7 +138,7 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-02-25 |
-| 2. Data Ingestion | 1/2 | In progress | - |
+| 2. Data Ingestion | 2/2 | Complete | 2026-02-25 |
 | 3. AI Enrichment | 0/TBD | Not started | - |
 | 4. Quality Audit | 0/TBD | Not started | - |
 | 5. Change Detection | 0/TBD | Not started | - |

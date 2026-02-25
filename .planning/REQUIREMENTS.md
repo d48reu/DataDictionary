@@ -11,7 +11,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **INGEST-01**: CLI can pull full catalog metadata from Socrata Discovery API with pagination (100 results/request)
 - [x] **INGEST-02**: CLI can pull full catalog metadata from ArcGIS Hub API (/api/v3/datasets)
-- [ ] **INGEST-03**: CLI fetches column/field metadata per dataset from Socrata Views API (/api/views/{id}.json)
+- [x] **INGEST-03**: CLI fetches column/field metadata per dataset from Socrata Views API (/api/views/{id}.json)
 - [x] **INGEST-04**: All metadata stored in SQLite database with normalized schema (datasets, columns tables)
 - [x] **INGEST-05**: All API calls rate-limited to 1 request/second
 - [x] **INGEST-06**: Datasets appearing on both portals are detected and deduplicated
@@ -65,7 +65,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **CLI-01**: Installable via `pip install .` with pyproject.toml and Hatchling backend
 - [x] **CLI-02**: Entry point `mdc-encyclopedia` available after install
-- [ ] **CLI-03**: `pull` command fetches metadata from both portals
+- [x] **CLI-03**: `pull` command fetches metadata from both portals
 - [ ] **CLI-04**: `stats` command shows database summary (dataset counts, enrichment status, quality overview)
 - [ ] **CLI-05**: `enrich` command runs AI enrichment pipeline
 - [ ] **CLI-06**: `audit` command runs quality audit
@@ -124,7 +124,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | INGEST-01 | Phase 2 | Complete |
 | INGEST-02 | Phase 2 | Complete |
-| INGEST-03 | Phase 2 | Pending |
+| INGEST-03 | Phase 2 | Complete |
 | INGEST-04 | Phase 1 | Complete |
 | INGEST-05 | Phase 2 | Complete |
 | INGEST-06 | Phase 2 | Complete |
@@ -163,7 +163,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SITE-13 | Phase 6 | Pending |
 | CLI-01 | Phase 1 | Complete |
 | CLI-02 | Phase 1 | Complete |
-| CLI-03 | Phase 2 | Pending |
+| CLI-03 | Phase 2 | Complete |
 | CLI-04 | Phase 4 | Pending |
 | CLI-05 | Phase 3 | Pending |
 | CLI-06 | Phase 4 | Pending |
