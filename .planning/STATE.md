@@ -10,33 +10,34 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 2 of 7 (Data Ingestion)
-Plan: 2 of 2 in current phase
+Plan: 3 of 3 in current phase
 Status: Phase Complete
-Last activity: 2026-02-25 -- Completed 02-02-PLAN.md (Field metadata fetcher and CLI pull command)
+Last activity: 2026-02-25 -- Completed 02-03-PLAN.md (Gap closure: fix relative DB path)
 
-Progress: [████░░░░░░] 29%
+Progress: [████░░░░░░] 36%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 2.5min
-- Total execution time: 0.17 hours
+- Total plans completed: 5
+- Average duration: 2.4min
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation | 2 | 4min | 2min |
-| 2. Data Ingestion | 2 | 6min | 3min |
+| 2. Data Ingestion | 3 | 8min | 2.7min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min), 01-02 (2min), 02-01 (3min), 02-02 (3min)
+- Last 5 plans: 01-01 (2min), 01-02 (2min), 02-01 (3min), 02-02 (3min), 02-03 (2min)
 - Trend: Consistent
 
 *Updated after each plan completion*
 | Phase 02 P01 | 3min | 2 tasks | 5 files |
 | Phase 02 P02 | 3min | 2 tasks | 2 files |
+| Phase 02 P03 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,9 @@ Recent decisions affecting current work:
 - [02-02]: Single ArcGIS Hub progress stage (no Socrata) since research confirmed no Socrata portal exists for Miami-Dade
 - [02-02]: Field fetch errors return empty list instead of raising -- individual dataset failures never crash the pull
 - [02-02]: Dedup panel shown by default with summary counts; --verbose shows per-pair detail
+- [02-03]: Used os.path.expanduser + os.path.join for XDG path instead of platformdirs dependency
+- [02-03]: Default DB at ~/.local/share/mdc-encyclopedia/mdc_encyclopedia.db follows XDG Base Directory Spec
+- [02-03]: Parent dir guard uses if parent: to avoid empty-string makedirs for bare filenames
 
 ### Pending Todos
 
@@ -73,5 +77,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 02-02-PLAN.md (Field metadata fetcher and CLI pull command -- Phase 2 complete)
+Stopped at: Completed 02-03-PLAN.md (Gap closure: fix relative DB path -- Phase 2 fully complete)
 Resume file: None
