@@ -89,6 +89,9 @@ def init_db(db_path: str) -> bool:
         True if the database was newly created, False if it already existed.
     """
     is_new = not os.path.exists(db_path)
+    parent = os.path.dirname(db_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")

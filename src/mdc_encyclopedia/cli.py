@@ -30,16 +30,22 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 
+def get_default_db_path() -> str:
+    """Return absolute default database path using XDG data directory convention."""
+    data_dir = os.path.join(os.path.expanduser("~"), ".local", "share", "mdc-encyclopedia")
+    return os.path.join(data_dir, "mdc_encyclopedia.db")
+
+
 @click.group()
 @click.version_option(package_name="mdc-encyclopedia")
 @click.pass_context
 def cli(ctx):
     """MDC Open Data Encyclopedia - catalog, enrich, and publish Miami-Dade County open datasets."""
     ctx.ensure_object(dict)
-    db_path = os.environ.get("MDC_ENCYCLOPEDIA_DB", "mdc_encyclopedia.db")
+    db_path = os.environ.get("MDC_ENCYCLOPEDIA_DB", get_default_db_path())
     is_new = init_db(db_path)
     if is_new:
-        console.print(f"[green]\u2713[/green] Created database: {db_path}")
+        console.print(f"[green]\u2713[/green] Created database: {os.path.abspath(db_path)}")
     ctx.obj["db_path"] = db_path
 
 
