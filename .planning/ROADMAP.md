@@ -47,11 +47,11 @@ Plans:
   3. Column/field metadata is stored for Socrata datasets (fetched via per-dataset Views API calls)
   4. Datasets appearing on both portals are detected and deduplicated (single record with both source links)
   5. All API calls are rate-limited to 1 request/second (observable via progress bar timing)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — Hub API client, normalizer, and database upserts (ingestion foundation)
+- [ ] 02-02-PLAN.md — Field metadata fetcher and CLI pull command with Rich progress/summary
 
 ### Phase 3: AI Enrichment
 **Goal**: Every dataset in the catalog has AI-generated plain-English descriptions, use cases, keywords, department attribution, and civic relevance that make it understandable by a non-technical resident
