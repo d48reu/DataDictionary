@@ -24,9 +24,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ENRICH-04**: Claude API infers likely owning department
 - [x] **ENRICH-05**: Claude API infers expected update frequency
 - [x] **ENRICH-06**: Claude API assigns civic relevance score (HIGH/MEDIUM/LOW)
-- [ ] **ENRICH-07**: Enrichment supports `--dry-run` flag showing what would be enriched without calling API
-- [ ] **ENRICH-08**: Enrichment supports `--resume` flag to continue from where it left off
-- [ ] **ENRICH-09**: Enrichment shows cost estimate before running and prompts for confirmation
+- [x] **ENRICH-07**: Enrichment supports `--dry-run` flag showing what would be enriched without calling API
+- [x] **ENRICH-08**: Enrichment supports `--resume` flag to continue from where it left off
+- [x] **ENRICH-09**: Enrichment shows cost estimate before running and prompts for confirmation
 - [x] **ENRICH-10**: Enrichments stored in separate SQLite table (survives metadata re-pulls)
 
 ### Quality & Audit
@@ -67,7 +67,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CLI-02**: Entry point `mdc-encyclopedia` available after install
 - [x] **CLI-03**: `pull` command fetches metadata from both portals
 - [ ] **CLI-04**: `stats` command shows database summary (dataset counts, enrichment status, quality overview)
-- [ ] **CLI-05**: `enrich` command runs AI enrichment pipeline
+- [x] **CLI-05**: `enrich` command runs AI enrichment pipeline
 - [ ] **CLI-06**: `audit` command runs quality audit
 - [ ] **CLI-07**: `diff` command shows changes between pulls
 - [ ] **CLI-08**: `export` command generates static site in site/ directory
@@ -134,9 +134,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENRICH-04 | Phase 3 | Complete |
 | ENRICH-05 | Phase 3 | Complete |
 | ENRICH-06 | Phase 3 | Complete |
-| ENRICH-07 | Phase 3 | Pending |
-| ENRICH-08 | Phase 3 | Pending |
-| ENRICH-09 | Phase 3 | Pending |
+| ENRICH-07 | Phase 3 | Complete |
+| ENRICH-08 | Phase 3 | Complete |
+| ENRICH-09 | Phase 3 | Complete |
 | ENRICH-10 | Phase 3 | Complete |
 | AUDIT-01 | Phase 4 | Pending |
 | AUDIT-02 | Phase 4 | Pending |
@@ -165,7 +165,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-02 | Phase 1 | Complete |
 | CLI-03 | Phase 2 | Complete |
 | CLI-04 | Phase 4 | Pending |
-| CLI-05 | Phase 3 | Pending |
+| CLI-05 | Phase 3 | Complete |
 | CLI-06 | Phase 4 | Pending |
 | CLI-07 | Phase 5 | Pending |
 | CLI-08 | Phase 6 | Pending |
