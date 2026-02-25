@@ -126,3 +126,81 @@ def get_connection(db_path: str) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys=ON")
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def upsert_dataset(conn: sqlite3.Connection, dataset: dict) -> str:
+    """Insert or update a dataset record using INSERT OR REPLACE.
+
+    Checks whether the dataset already exists to report 'new' vs 'updated'.
+    Sets pulled_at to the current timestamp on every upsert.
+
+    Args:
+        conn: An open sqlite3.Connection (caller manages lifecycle).
+        dataset: Dict with keys matching datasets table columns
+                 (as produced by normalizer.normalize_hub_dataset).
+
+    Returns:
+        "new" if this is a first insert, "updated" if replacing existing row.
+    """
+    existing = conn.execute(
+        "SELECT id FROM datasets WHERE id = ?", (dataset["id"],)
+    ).fetchone()
+
+    conn.execute(
+        """INSERT OR REPLACE INTO datasets
+        (id, source_portal, source_url, title, description, category,
+         publisher, format, created_at, updated_at, row_count, tags,
+         license, api_endpoint, bbox, download_url, metadata_json, pulled_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+        (
+            dataset["id"],
+            dataset["source_portal"],
+            dataset["source_url"],
+            dataset["title"],
+            dataset["description"],
+            dataset["category"],
+            dataset["publisher"],
+            dataset["format"],
+            dataset["created_at"],
+            dataset["updated_at"],
+            dataset["row_count"],
+            dataset["tags"],
+            dataset["license"],
+            dataset["api_endpoint"],
+            dataset["bbox"],
+            dataset["download_url"],
+            dataset["metadata_json"],
+        ),
+    )
+    conn.commit()
+
+    return "updated" if existing else "new"
+
+
+def upsert_columns(
+    conn: sqlite3.Connection, dataset_id: str, columns: list[dict]
+) -> int:
+    """Replace all column metadata for a dataset.
+
+    Deletes existing columns for the dataset_id first, then inserts the
+    new column definitions. This ensures a clean refresh on every pull.
+
+    Args:
+        conn: An open sqlite3.Connection (caller manages lifecycle).
+        dataset_id: The dataset ID these columns belong to.
+        columns: List of dicts with keys: dataset_id, name, data_type, description
+                 (as produced by normalizer.normalize_field).
+
+    Returns:
+        Number of columns inserted.
+    """
+    conn.execute("DELETE FROM columns WHERE dataset_id = ?", (dataset_id,))
+
+    for col in columns:
+        conn.execute(
+            "INSERT INTO columns (dataset_id, name, data_type, description) VALUES (?, ?, ?, ?)",
+            (dataset_id, col["name"], col["data_type"], col["description"]),
+        )
+
+    conn.commit()
+    return len(columns)
