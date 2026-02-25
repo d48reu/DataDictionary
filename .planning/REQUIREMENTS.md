@@ -9,12 +9,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data Ingestion
 
-- [ ] **INGEST-01**: CLI can pull full catalog metadata from Socrata Discovery API with pagination (100 results/request)
-- [ ] **INGEST-02**: CLI can pull full catalog metadata from ArcGIS Hub API (/api/v3/datasets)
+- [x] **INGEST-01**: CLI can pull full catalog metadata from Socrata Discovery API with pagination (100 results/request)
+- [x] **INGEST-02**: CLI can pull full catalog metadata from ArcGIS Hub API (/api/v3/datasets)
 - [ ] **INGEST-03**: CLI fetches column/field metadata per dataset from Socrata Views API (/api/views/{id}.json)
 - [x] **INGEST-04**: All metadata stored in SQLite database with normalized schema (datasets, columns tables)
-- [ ] **INGEST-05**: All API calls rate-limited to 1 request/second
-- [ ] **INGEST-06**: Datasets appearing on both portals are detected and deduplicated
+- [x] **INGEST-05**: All API calls rate-limited to 1 request/second
+- [x] **INGEST-06**: Datasets appearing on both portals are detected and deduplicated
 
 ### AI Enrichment
 
@@ -122,12 +122,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INGEST-01 | Phase 2 | Pending |
-| INGEST-02 | Phase 2 | Pending |
+| INGEST-01 | Phase 2 | Complete |
+| INGEST-02 | Phase 2 | Complete |
 | INGEST-03 | Phase 2 | Pending |
 | INGEST-04 | Phase 1 | Complete |
-| INGEST-05 | Phase 2 | Pending |
-| INGEST-06 | Phase 2 | Pending |
+| INGEST-05 | Phase 2 | Complete |
+| INGEST-06 | Phase 2 | Complete |
 | ENRICH-01 | Phase 3 | Pending |
 | ENRICH-02 | Phase 3 | Pending |
 | ENRICH-03 | Phase 3 | Pending |

@@ -50,7 +50,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Hub API client, normalizer, and database upserts (ingestion foundation)
+- [x] 02-01-PLAN.md — Hub API client, normalizer, and database upserts (ingestion foundation)
 - [ ] 02-02-PLAN.md — Field metadata fetcher and CLI pull command with Rich progress/summary
 
 ### Phase 3: AI Enrichment
@@ -137,8 +137,8 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/2 | In progress | - |
-| 2. Data Ingestion | 0/TBD | Not started | - |
+| 1. Foundation | 2/2 | Complete | 2026-02-25 |
+| 2. Data Ingestion | 1/2 | In progress | - |
 | 3. AI Enrichment | 0/TBD | Not started | - |
 | 4. Quality Audit | 0/TBD | Not started | - |
 | 5. Change Detection | 0/TBD | Not started | - |
