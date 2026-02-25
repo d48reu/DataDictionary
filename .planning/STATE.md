@@ -9,29 +9,29 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 1 of 7 (Foundation)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-02-25 -- Completed 01-01-PLAN.md (package skeleton + SQLite schema)
+Phase: 1 of 7 (Foundation) -- COMPLETE
+Plan: 2 of 2 in current phase (all plans complete)
+Status: Phase Complete
+Last activity: 2026-02-25 -- Completed 01-02-PLAN.md (CLI entry point with stub commands)
 
-Progress: [█░░░░░░░░░] 7%
+Progress: [██░░░░░░░░] 14%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
+- Total plans completed: 2
 - Average duration: 2min
-- Total execution time: 0.03 hours
+- Total execution time: 0.07 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 1 | 2min | 2min |
+| 1. Foundation | 2 | 4min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min)
-- Trend: Starting
+- Last 5 plans: 01-01 (2min), 01-02 (2min)
+- Trend: Consistent
 
 *Updated after each plan completion*
 
@@ -46,6 +46,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Phases 3, 4, 5 all depend on Phase 2 but are sequenced linearly for solo developer execution
 - [01-01]: Used PRAGMA user_version for schema versioning instead of a schema_version table
 - [01-01]: Added json_valid CHECK fallback for Python builds without JSON1 extension
+- [01-02]: Used rich_click as drop-in replacement for click for automatic Rich formatting
+- [01-02]: Database path configurable via MDC_ENCYCLOPEDIA_DB env var, defaulting to mdc_encyclopedia.db
 
 ### Pending Todos
 
@@ -61,5 +63,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 01-01-PLAN.md
+Stopped at: Completed 01-02-PLAN.md (Phase 1 Foundation complete)
 Resume file: None

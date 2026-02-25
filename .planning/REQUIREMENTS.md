@@ -64,7 +64,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### CLI & Packaging
 
 - [x] **CLI-01**: Installable via `pip install .` with pyproject.toml and Hatchling backend
-- [ ] **CLI-02**: Entry point `mdc-encyclopedia` available after install
+- [x] **CLI-02**: Entry point `mdc-encyclopedia` available after install
 - [ ] **CLI-03**: `pull` command fetches metadata from both portals
 - [ ] **CLI-04**: `stats` command shows database summary (dataset counts, enrichment status, quality overview)
 - [ ] **CLI-05**: `enrich` command runs AI enrichment pipeline
@@ -72,7 +72,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **CLI-07**: `diff` command shows changes between pulls
 - [ ] **CLI-08**: `export` command generates static site in site/ directory
 - [ ] **CLI-09**: `serve` command starts local preview server for the static site
-- [ ] **CLI-10**: Rich terminal output for all commands (progress bars, tables, colored status)
+- [x] **CLI-10**: Rich terminal output for all commands (progress bars, tables, colored status)
 
 ### Deployment
 
@@ -162,7 +162,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SITE-12 | Phase 6 | Pending |
 | SITE-13 | Phase 6 | Pending |
 | CLI-01 | Phase 1 | Complete |
-| CLI-02 | Phase 1 | Pending |
+| CLI-02 | Phase 1 | Complete |
 | CLI-03 | Phase 2 | Pending |
 | CLI-04 | Phase 4 | Pending |
 | CLI-05 | Phase 3 | Pending |
@@ -170,7 +170,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-07 | Phase 5 | Pending |
 | CLI-08 | Phase 6 | Pending |
 | CLI-09 | Phase 6 | Pending |
-| CLI-10 | Phase 1 | Pending |
+| CLI-10 | Phase 1 | Complete |
 | DEPLOY-01 | Phase 7 | Pending |
 | DEPLOY-02 | Phase 7 | Pending |
 | DEPLOY-03 | Phase 7 | Pending |
