@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-data-ingestion
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md]
 started: 2026-02-25T02:30:00Z
-updated: 2026-02-25T02:40:00Z
+updated: 2026-02-25T02:45:00Z
 ---
 
 ## Current Test
@@ -56,7 +56,10 @@ skipped: 3
   reason: "User reported: Database has 0 records. The pull command created the DB and tables but no data was inserted. Need to debug the ingestion."
   severity: blocker
   test: 2
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Database path is relative ('mdc_encyclopedia.db') so DB is created in CWD. Pull works correctly but user checked a different empty DB in the project directory."
+  artifacts:
+    - path: "src/mdc_encyclopedia/cli.py"
+      issue: "Line 39: db_path defaults to bare relative filename 'mdc_encyclopedia.db'"
+  missing:
+    - "Use an absolute default path (e.g., ~/.local/share/mdc-encyclopedia/mdc_encyclopedia.db or click.get_app_dir())"
+  debug_session: ".planning/debug/pull-inserts-zero-records.md"
