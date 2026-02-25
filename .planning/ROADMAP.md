@@ -31,11 +31,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Running `mdc-encyclopedia` prints a help message listing available subcommands with Rich-formatted output
   3. Running `mdc-encyclopedia` for the first time creates a SQLite database file with the correct table schema (datasets, columns, enrichments, audit_scores, changes)
   4. The database schema includes a separate enrichments table that will not be overwritten by future metadata pulls
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Package skeleton with Hatchling config and SQLite database module
+- [ ] 01-02-PLAN.md — CLI entry point with Rich-formatted stub commands and install verification
 
 ### Phase 2: Data Ingestion
 **Goal**: Users can pull the complete Miami-Dade open data catalog from both portals into the local database with a single command
@@ -137,7 +137,7 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/2 | Planning complete | - |
 | 2. Data Ingestion | 0/TBD | Not started | - |
 | 3. AI Enrichment | 0/TBD | Not started | - |
 | 4. Quality Audit | 0/TBD | Not started | - |
