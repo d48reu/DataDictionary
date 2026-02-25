@@ -4,6 +4,7 @@ import logging
 import os
 import time
 
+import anthropic
 import rich_click as click
 from rich.console import Console
 from rich.panel import Panel
@@ -17,7 +18,22 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from mdc_encyclopedia.db import get_connection, init_db, upsert_columns, upsert_dataset
+from mdc_encyclopedia.db import (
+    get_columns_for_dataset,
+    get_connection,
+    get_unenriched_datasets,
+    init_db,
+    insert_enrichment,
+    upsert_columns,
+    upsert_dataset,
+)
+from mdc_encyclopedia.enrichment.client import (
+    create_enrichment_client,
+    enrich_dataset,
+    estimate_cost,
+)
+from mdc_encyclopedia.enrichment.models import DEFAULT_MODEL
+from mdc_encyclopedia.enrichment.prompts import PROMPT_VERSION
 from mdc_encyclopedia.ingestion.field_fetcher import fetch_fields_for_dataset
 from mdc_encyclopedia.ingestion.hub_client import (
     create_client,
@@ -194,9 +210,157 @@ def pull(ctx, verbose):
 
 
 @cli.command()
-def enrich():
+@click.option("--dry-run", is_flag=True, help="Show what would be enriched and estimated cost without calling the API.")
+@click.option("--resume", is_flag=True, help="Resume enrichment from where it left off (skips already-enriched datasets).")
+@click.option("--model", default=DEFAULT_MODEL, show_default=True, help="Anthropic model to use for enrichment.")
+@click.option("--limit", type=int, default=None, help="Limit number of datasets to enrich (useful for testing).")
+@click.pass_context
+def enrich(ctx, dry_run, resume, model, limit):
     """Enrich datasets with AI-generated descriptions and metadata."""
-    console.print("[yellow]Not yet implemented[/yellow]")
+    start_time = time.time()
+    db_path = ctx.obj["db_path"]
+    conn = get_connection(db_path)
+
+    # Step 1: Get unenriched datasets (resume is implicit -- always skips enriched)
+    unenriched = get_unenriched_datasets(conn)
+    if not unenriched:
+        console.print("[green]All datasets already enriched.[/green]")
+        conn.close()
+        return
+
+    # Step 2: Apply --limit
+    if limit is not None:
+        unenriched = unenriched[:limit]
+
+    console.print(f"Found [bold]{len(unenriched)}[/bold] unenriched dataset(s).")
+
+    # Step 3: Check API key early (unless --dry-run)
+    client = None
+    if not dry_run:
+        try:
+            client = create_enrichment_client(model=model)
+        except ValueError as exc:
+            console.print(f"[red]{exc}[/red]")
+            conn.close()
+            raise click.Abort() from exc
+
+    # Step 4: Build column lookup
+    columns_by_dataset = {
+        ds["id"]: get_columns_for_dataset(conn, ds["id"]) for ds in unenriched
+    }
+
+    # Step 5: Cost estimation
+    # For dry-run, we need a client for count_tokens
+    if dry_run:
+        try:
+            client = create_enrichment_client(model=model)
+        except ValueError as exc:
+            console.print(f"[red]{exc}[/red]")
+            conn.close()
+            raise click.Abort() from exc
+
+    cost = estimate_cost(client, model, unenriched, columns_by_dataset)
+
+    # Display cost estimate table
+    cost_table = Table(title="Cost Estimate")
+    cost_table.add_column("Metric", style="bold")
+    cost_table.add_column("Value", justify="right")
+    cost_table.add_row("Datasets to enrich", str(cost["dataset_count"]))
+    cost_table.add_row("Estimated input tokens", f"{cost['input_tokens']:,}")
+    cost_table.add_row("Estimated output tokens", f"{cost['output_tokens_est']:,}")
+    cost_table.add_row("Estimated input cost", f"${cost['input_cost']:.4f}")
+    cost_table.add_row("Estimated output cost", f"${cost['output_cost_est']:.4f}")
+    cost_table.add_row("Estimated total cost", f"${cost['total_est']:.4f}")
+    cost_table.add_row("Model", model)
+    console.print(cost_table)
+
+    if dry_run:
+        # Show unenriched dataset list
+        ds_table = Table(title="Unenriched Datasets")
+        ds_table.add_column("#", justify="right")
+        ds_table.add_column("Title")
+        for i, ds in enumerate(unenriched, 1):
+            title = ds.get("title", "Unknown") or "Unknown"
+            ds_table.add_row(str(i), title[:60])
+        console.print(ds_table)
+        conn.close()
+        return
+
+    # Step 6: Confirmation flow
+    if cost["total_est"] > 5.0:
+        click.confirm(
+            f"Estimated cost exceeds $5 (${cost['total_est']:.2f}). Proceed?",
+            abort=True,
+        )
+    else:
+        console.print(
+            f"[green]Estimated cost: ${cost['total_est']:.2f} "
+            f"(under $5 threshold, auto-proceeding)[/green]"
+        )
+
+    # Step 7: Enrichment loop with Rich progress
+    enriched_count = 0
+    failed_count = 0
+    failed_datasets: list[tuple[str, str]] = []
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TextColumn("datasets"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Enriching", total=len(unenriched))
+
+        for ds in unenriched:
+            ds_title = ds.get("title", "Unknown") or "Unknown"
+            try:
+                result = enrich_dataset(
+                    client, model, ds, columns_by_dataset.get(ds["id"], [])
+                )
+                insert_enrichment(conn, ds["id"], result.model_dump(), PROMPT_VERSION)
+                enriched_count += 1
+            except (anthropic.APIError, anthropic.RateLimitError) as exc:
+                failed_count += 1
+                failed_datasets.append((ds_title, str(exc)))
+                logger.warning("Failed to enrich '%s': %s", ds_title, exc)
+            except Exception as exc:
+                failed_count += 1
+                failed_datasets.append((ds_title, str(exc)))
+                logger.warning("Failed to enrich '%s': %s", ds_title, exc)
+
+            progress.advance(task)
+            # Rate limiting delay between API calls
+            time.sleep(1)
+
+    # Step 8: Summary table
+    elapsed = time.time() - start_time
+    elapsed_min = int(elapsed // 60)
+    elapsed_sec = int(elapsed % 60)
+    elapsed_str = f"{elapsed_min}m {elapsed_sec}s"
+
+    summary_table = Table(title="Enrichment Summary")
+    summary_table.add_column("Metric", style="bold")
+    summary_table.add_column("Value", justify="right")
+    summary_table.add_row("Total enriched", str(enriched_count))
+    summary_table.add_row("Failed", str(failed_count))
+    summary_table.add_row("Model", model)
+    summary_table.add_row("Prompt version", PROMPT_VERSION)
+    summary_table.add_row("Elapsed time", elapsed_str)
+    console.print(summary_table)
+
+    if failed_datasets:
+        fail_table = Table(title="Failed Datasets")
+        fail_table.add_column("Dataset")
+        fail_table.add_column("Error")
+        for ds_title, error in failed_datasets:
+            fail_table.add_row(ds_title[:60], error[:80])
+        console.print(fail_table)
+
+    # Step 9: Cleanup
+    conn.close()
 
 
 @cli.command()
