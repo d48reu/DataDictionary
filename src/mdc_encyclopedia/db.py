@@ -1,5 +1,6 @@
 """Database initialization and schema management for MDC Open Data Encyclopedia."""
 
+import json
 import os
 import sqlite3
 
@@ -207,3 +208,87 @@ def upsert_columns(
 
     conn.commit()
     return len(columns)
+
+
+def get_unenriched_datasets(conn: sqlite3.Connection) -> list[dict]:
+    """Get datasets that have no enrichment record yet.
+
+    Uses a LEFT JOIN with the enrichments table to find datasets
+    that haven't been enriched. Results are ordered by title.
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+
+    Returns:
+        List of dataset dicts with keys: id, title, description,
+        category, publisher, tags, updated_at, created_at, format.
+    """
+    rows = conn.execute(
+        """
+        SELECT d.id, d.title, d.description, d.category, d.publisher,
+               d.tags, d.updated_at, d.created_at, d.format
+        FROM datasets d
+        LEFT JOIN enrichments e ON d.id = e.dataset_id
+        WHERE e.id IS NULL
+        ORDER BY d.title
+        """
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_columns_for_dataset(
+    conn: sqlite3.Connection, dataset_id: str
+) -> list[dict]:
+    """Get column metadata for a specific dataset.
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+        dataset_id: The dataset ID to fetch columns for.
+
+    Returns:
+        List of column dicts with keys: name, data_type, description.
+    """
+    rows = conn.execute(
+        "SELECT name, data_type, description FROM columns WHERE dataset_id = ?",
+        (dataset_id,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def insert_enrichment(
+    conn: sqlite3.Connection,
+    dataset_id: str,
+    result: dict,
+    prompt_version: str,
+) -> None:
+    """Insert an enrichment record for a dataset.
+
+    Uses INSERT OR REPLACE to handle re-enrichment. The use_cases and
+    keywords fields are JSON-serialized. Commits immediately after insert
+    for resume safety -- each dataset is marked enriched as soon as the
+    API call succeeds.
+
+    Args:
+        conn: An open sqlite3.Connection (caller manages lifecycle).
+        dataset_id: The dataset ID this enrichment belongs to.
+        result: Dict with keys: description, use_cases, keywords,
+                department, update_frequency, civic_relevance.
+        prompt_version: Version string of the prompt that produced this result.
+    """
+    conn.execute(
+        """INSERT OR REPLACE INTO enrichments
+        (dataset_id, description, use_cases, keywords, department,
+         update_freq, civic_relevance, prompt_version, enriched_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+        (
+            dataset_id,
+            result["description"],
+            json.dumps(result["use_cases"]),
+            json.dumps(result["keywords"]),
+            result["department"],
+            result["update_frequency"],
+            result["civic_relevance"],
+            prompt_version,
+        ),
+    )
+    conn.commit()
