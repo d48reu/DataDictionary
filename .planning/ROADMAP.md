@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Python package skeleton with SQLite schema, CLI entry point, and Rich output
 - [x] **Phase 2: Data Ingestion** - Pull full catalog metadata from Socrata and ArcGIS Hub into SQLite
-- [ ] **Phase 3: AI Enrichment** - Claude-powered plain-English descriptions, use cases, keywords, and civic relevance for every dataset
+- [x] **Phase 3: AI Enrichment** - Claude-powered plain-English descriptions, use cases, keywords, and civic relevance for every dataset
 - [ ] **Phase 4: Quality Audit** - Staleness detection, completeness scoring, and quality grades for every dataset
 - [ ] **Phase 5: Change Detection** - Diff between pulls identifying new, removed, and schema-changed datasets
 - [ ] **Phase 6: Static Site** - Searchable, browsable HTML encyclopedia with dataset pages, quality reports, and change history
@@ -67,7 +67,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Enrichment core module: Pydantic model, prompt templates, Anthropic client wrapper, DB helpers
-- [ ] 03-02-PLAN.md — CLI enrich command with --dry-run, --resume, --model, cost estimation, and Rich progress
+- [x] 03-02-PLAN.md — CLI enrich command with --dry-run, --resume, --model, cost estimation, and Rich progress
 
 ### Phase 4: Quality Audit
 **Goal**: Every dataset has a quality score based on staleness, completeness, and documentation that enables residents to judge data reliability
@@ -140,7 +140,7 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-02-25 |
 | 2. Data Ingestion | 3/3 | Complete | 2026-02-25 |
-| 3. AI Enrichment | 0/2 | Not started | - |
+| 3. AI Enrichment | 2/2 | Complete | 2026-02-25 |
 | 4. Quality Audit | 0/TBD | Not started | - |
 | 5. Change Detection | 0/TBD | Not started | - |
 | 6. Static Site | 0/TBD | Not started | - |
