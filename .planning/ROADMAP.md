@@ -111,13 +111,14 @@ Plans:
   6. A "What Changed" page shows diff results from the most recent pull comparison
   7. A data quality report page shows aggregate stats (percent described, stale count, quality distribution)
   8. Every page has the MDC branding (#003366, white, amber), responsive mobile layout, disclaimer footer, and works as a pure static file
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 - [x] 06-01-PLAN.md — Site generator foundation: context queries, generator orchestrator, base template, CSS system, CLI export/serve commands
-- [ ] 06-02-PLAN.md — Homepage and full-text search: Lunr.js index generation, instant search dropdown, stat cards, category links
-- [ ] 06-03-PLAN.md — Dataset detail pages and category browse: metadata display, related datasets, freshness indicators, client-side filtering
-- [ ] 06-04-PLAN.md — Report pages: What Changed, Data Quality report, About/disclaimer
+- [x] 06-02-PLAN.md — Homepage and full-text search: Lunr.js index generation, instant search dropdown, stat cards, category links
+- [x] 06-03-PLAN.md — Dataset detail pages and category browse: metadata display, related datasets, freshness indicators, client-side filtering
+- [x] 06-04-PLAN.md — Report pages: What Changed, Data Quality report, About/disclaimer
+- [ ] 06-05-PLAN.md — Gap closure: fix search result URLs and homepage category link slugs
 
 ### Phase 7: Deployment
 **Goal**: The encyclopedia auto-refreshes weekly and is publicly accessible on GitHub Pages without manual intervention
@@ -145,5 +146,5 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 | 3. AI Enrichment | 2/2 | Complete | 2026-02-25 |
 | 4. Quality Audit | 2/2 | Complete | 2026-02-26 |
 | 5. Change Detection | 2/2 | Complete    | 2026-02-26 |
-| 6. Static Site | 4/4 | Complete | 2026-02-26 |
+| 6. Static Site | 4/5 | Gap Closure | 2026-02-26 |
 | 7. Deployment | 0/TBD | Not started | - |
