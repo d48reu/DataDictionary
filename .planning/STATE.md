@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 6: Static Site (In Progress)
+**Current focus:** Phase 6: Static Site (Complete)
 
 ## Current Position
 
 Phase: 6 of 7 (Static Site)
-Plan: 3 of 4 in current phase
-Status: In Progress
-Last activity: 2026-02-26 -- Completed 06-03-PLAN.md (dataset detail & browse pages)
+Plan: 4 of 4 in current phase
+Status: Phase Complete
+Last activity: 2026-02-26 -- Completed 06-04-PLAN.md (report/informational pages)
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 2.7min
-- Total execution time: 0.65 hours
+- Total plans completed: 15
+- Average duration: 2.8min
+- Total execution time: 0.77 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [█████████░] 90%
 | 3. AI Enrichment | 2 | 5min | 2.5min |
 | 4. Quality Audit | 2 | 5min | 2.5min |
 | 5. Change Detection | 2 | 4min | 2min |
-| 6. Static Site | 3 | 13min | 4.3min |
+| 6. Static Site | 4 | 20min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (2min), 06-01 (4min), 06-02 (4min), 06-03 (5min)
+- Last 5 plans: 06-01 (4min), 06-02 (4min), 06-03 (5min), 06-04 (7min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -51,6 +51,7 @@ Progress: [█████████░] 90%
 | Phase 06 P01 | 4min | 2 tasks | 14 files |
 | Phase 06 P02 | 4min | 2 tasks | 6 files |
 | Phase 06 P03 | 5min | 2 tasks | 6 files |
+| Phase 06 P04 | 7min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,10 @@ Recent decisions affecting current work:
 - [06-03]: Browse pages use data attributes (data-format, data-publisher, data-tags) for zero-dependency client-side filtering
 - [06-03]: Dataset pages at /dataset/{slug}/index.html, browse pages at /browse/{slug}/index.html for clean URLs
 - [06-03]: Context pipeline extended with category_slug, tags_text, and audit dict for template consumption
+- [06-04]: new_this_week computed from changes table (added in last 7 days) instead of dataset updated_at for accuracy
+- [06-04]: Disclaimer box uses red border and background for maximum visual prominence
+- [06-04]: Grade distribution uses CSS-only horizontal bars (width proportional to percentage)
+- [06-04]: Below-threshold dimension counts use 0.5 cutoff; stale datasets use 0.4 freshness cutoff
 
 ### Pending Todos
 
@@ -123,5 +128,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 06-03-PLAN.md (dataset detail & browse pages)
+Stopped at: Completed 06-04-PLAN.md (report/informational pages)
 Resume file: None

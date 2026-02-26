@@ -53,9 +53,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SITE-04**: Related datasets shown on each dataset page (tag/category overlap)
 - [x] **SITE-05**: Freshness indicators on dataset listings and detail pages
 - [x] **SITE-06**: Filtering by format, publisher, and tag on browse pages
-- [ ] **SITE-07**: "What Changed" page showing diff results between pulls
-- [ ] **SITE-08**: Data quality report page with aggregate stats (% described, stale count, etc.)
-- [ ] **SITE-09**: About/disclaimer page with methodology
+- [x] **SITE-07**: "What Changed" page showing diff results between pulls
+- [x] **SITE-08**: Data quality report page with aggregate stats (% described, stale count, etc.)
+- [x] **SITE-09**: About/disclaimer page with methodology
 - [x] **SITE-10**: Footer on every page: "Not an official Miami-Dade County product. Built by Abreu Data Works LLC."
 - [x] **SITE-11**: MDC blue (#003366), white, amber color scheme
 - [x] **SITE-12**: Responsive layout that works on mobile
@@ -159,9 +159,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SITE-04 | Phase 6 | Complete |
 | SITE-05 | Phase 6 | Complete |
 | SITE-06 | Phase 6 | Complete |
-| SITE-07 | Phase 6 | Pending |
-| SITE-08 | Phase 6 | Pending |
-| SITE-09 | Phase 6 | Pending |
+| SITE-07 | Phase 6 | Complete |
+| SITE-08 | Phase 6 | Complete |
+| SITE-09 | Phase 6 | Complete |
 | SITE-10 | Phase 6 | Complete |
 | SITE-11 | Phase 6 | Complete |
 | SITE-12 | Phase 6 | Complete |
