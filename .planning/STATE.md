@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 4: Quality Audit
+**Current focus:** Phase 5: Change Detection
 
 ## Current Position
 
-Phase: 4 of 7 (Quality Audit) -- COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase Complete
-Last activity: 2026-02-26 -- Completed 04-02-PLAN.md (CLI audit and stats commands)
+Phase: 5 of 7 (Change Detection)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-02-26 -- Completed 05-01-PLAN.md (diff detection engine)
 
-Progress: [██████░░░░] 64%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 2.4min
-- Total execution time: 0.37 hours
+- Total execution time: 0.40 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [██████░░░░] 64%
 | 2. Data Ingestion | 3 | 8min | 2.7min |
 | 3. AI Enrichment | 2 | 5min | 2.5min |
 | 4. Quality Audit | 2 | 5min | 2.5min |
+| 5. Change Detection | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3min), 03-02 (2min), 04-01 (3min), 04-02 (2min)
+- Last 5 plans: 03-02 (2min), 04-01 (3min), 04-02 (2min), 05-01 (2min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -44,6 +45,7 @@ Progress: [██████░░░░] 64%
 | Phase 03 P02 | 2min | 1 tasks | 1 files |
 | Phase 04 P01 | 3min | 2 tasks | 3 files |
 | Phase 04 P02 | 2min | 2 tasks | 1 files |
+| Phase 05 P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -82,6 +84,10 @@ Recent decisions affecting current work:
 - [04-02]: Grade distribution queried from DB after all upserts for consistency (not accumulated in memory)
 - [04-02]: Stats command sections are conditional: quality distribution and top findings only shown when audit data exists
 - [04-02]: Top findings aggregated from findings_json across all audit_scores using Counter.most_common(5)
+- [05-01]: Shared detected_at timestamp generated once per compute_changes call ensures batch grouping
+- [05-01]: Removed dataset title stored in details JSON as defensive measure against future cleanup
+- [05-01]: First-pull returns zeros immediately without inserting records (caller handles messaging)
+- [05-01]: insert_change does NOT commit; compute_changes commits once after all batch inserts
 
 ### Pending Todos
 
@@ -97,5 +103,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 04-02-PLAN.md (CLI audit and stats commands -- Phase 4 complete)
+Stopped at: Completed 05-01-PLAN.md (diff detection engine -- snapshot capture and change computation)
 Resume file: None

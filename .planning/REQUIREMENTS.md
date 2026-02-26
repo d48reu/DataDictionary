@@ -39,11 +39,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Change Detection
 
-- [ ] **DIFF-01**: CLI compares current pull against previous pull state
-- [ ] **DIFF-02**: Diff identifies newly added datasets
-- [ ] **DIFF-03**: Diff identifies removed datasets
-- [ ] **DIFF-04**: Diff identifies schema changes (column additions/removals)
-- [ ] **DIFF-05**: Diff results stored in SQLite for site generation
+- [x] **DIFF-01**: CLI compares current pull against previous pull state
+- [x] **DIFF-02**: Diff identifies newly added datasets
+- [x] **DIFF-03**: Diff identifies removed datasets
+- [x] **DIFF-04**: Diff identifies schema changes (column additions/removals)
+- [x] **DIFF-05**: Diff results stored in SQLite for site generation
 
 ### Static Site
 
@@ -148,11 +148,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUDIT-03 | Phase 4 | Complete |
 | AUDIT-04 | Phase 4 | Complete |
 | AUDIT-05 | Phase 4 | Complete |
-| DIFF-01 | Phase 5 | Pending |
-| DIFF-02 | Phase 5 | Pending |
-| DIFF-03 | Phase 5 | Pending |
-| DIFF-04 | Phase 5 | Pending |
-| DIFF-05 | Phase 5 | Pending |
+| DIFF-01 | Phase 5 | Complete |
+| DIFF-02 | Phase 5 | Complete |
+| DIFF-03 | Phase 5 | Complete |
+| DIFF-04 | Phase 5 | Complete |
+| DIFF-05 | Phase 5 | Complete |
 | SITE-01 | Phase 6 | Pending |
 | SITE-02 | Phase 6 | Pending |
 | SITE-03 | Phase 6 | Pending |
