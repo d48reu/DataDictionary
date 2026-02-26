@@ -78,11 +78,11 @@ Plans:
   2. Running `mdc-encyclopedia stats` displays a Rich-formatted summary: dataset count per portal, enrichment status counts, and quality score distribution
   3. Stale datasets (last updated exceeds expected frequency), empty datasets, and poorly described datasets are each flagged with specific audit findings
   4. Each dataset receives a composite quality score reflecting metadata completeness, freshness, and column documentation coverage
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — Schema V2 migration and three-dimension scoring engine (audit/scorer.py, db.py)
+- [ ] 04-02-PLAN.md — CLI audit and stats commands with Rich output (cli.py)
 
 ### Phase 5: Change Detection
 **Goal**: Users can see what changed between catalog pulls -- new datasets, removed datasets, and schema changes
