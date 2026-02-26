@@ -128,10 +128,11 @@ Plans:
   1. The static site deploys to GitHub Pages and is accessible at the project's GitHub Pages URL
   2. A GitHub Actions workflow runs weekly on a cron schedule, executing: pull, audit, diff, optional enrich (if ANTHROPIC_API_KEY secret is set), export, and deploy
   3. The workflow completes successfully even without ANTHROPIC_API_KEY (skipping enrichment gracefully)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: TBD
+- [ ] 07-01-PLAN.md — GitHub Actions workflow with cron/push/dispatch triggers, conditional enrichment, DB persistence, and Pages deployment
+- [ ] 07-02-PLAN.md — Verify deployment setup and one-time GitHub Pages configuration
 
 ## Progress
 
@@ -147,4 +148,4 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 | 4. Quality Audit | 2/2 | Complete | 2026-02-26 |
 | 5. Change Detection | 2/2 | Complete    | 2026-02-26 |
 | 6. Static Site | 5/5 | Complete    | 2026-02-26 |
-| 7. Deployment | 0/TBD | Not started | - |
+| 7. Deployment | 0/2 | Not started | - |
