@@ -1,8 +1,86 @@
 {% extends "base.html" %}
 
-{% block title %}Browse Datasets - MDC Data Encyclopedia{% endblock %}
+{% block title %}{{ category_name|default('Browse All Datasets') }} - MDC Data Encyclopedia{% endblock %}
 
 {% block content %}
-<h1>Browse Datasets</h1>
-<p>Explore datasets by category.</p>
+<!-- Page Header -->
+<div class="browse-header">
+    <h1>{{ category_name|default('Browse All Datasets') }}</h1>
+    <span class="browse-count">{{ dataset_count }} dataset{{ 's' if dataset_count != 1 else '' }}</span>
+</div>
+
+{% if datasets %}
+<!-- Filter Bar -->
+<div class="filter-bar" id="filter-bar">
+    <select id="filter-format" aria-label="Filter by format">
+        <option value="">All Formats</option>
+        {% for fmt in formats %}
+        <option value="{{ fmt }}">{{ fmt }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filter-publisher" aria-label="Filter by publisher">
+        <option value="">All Publishers</option>
+        {% for pub in publishers %}
+        <option value="{{ pub }}">{{ pub }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filter-tag" aria-label="Filter by tag">
+        <option value="">All Tags</option>
+        {% for tag in tags %}
+        <option value="{{ tag }}">{{ tag }}</option>
+        {% endfor %}
+    </select>
+
+    <button class="clear-btn" id="clear-filters" type="button">Clear All</button>
+    <span class="result-count" id="result-count">{{ dataset_count }} datasets</span>
+</div>
+
+<!-- Active Filter Chips -->
+<div class="filter-chips" id="filter-chips"></div>
+
+<!-- Dataset List -->
+<div class="dataset-list" id="dataset-list">
+    {% for ds in datasets %}
+    <div class="dataset-row"
+         data-format="{{ ds.format|default('')|lower }}"
+         data-publisher="{{ ds.publisher|default('')|lower }}"
+         data-tags="{{ ds.tags_text|default('')|lower }}">
+        <div class="dataset-grade">
+            <span class="grade {{ ds.grade_class|default('grade-none') }}" title="Grade: {{ ds.grade|default(ds.letter_grade)|default('N/A') }}">{{ ds.grade|default(ds.letter_grade)|default('?') }}</span>
+        </div>
+        <div class="dataset-info">
+            <div class="dataset-title">
+                <a href="/dataset/{{ ds.slug }}/">{{ ds.title }}</a>
+            </div>
+            <div class="dataset-desc">{{ ds.ai_description|default(ds.description)|default('No description available')|truncate(120) }}</div>
+            <div class="dataset-meta">
+                {% if ds.department %}
+                <span class="chip">{{ ds.department }}</span>
+                {% endif %}
+                <span class="dataset-freshness">
+                    <span class="freshness-dot {{ ds.staleness_color|default('gray') }}"></span>
+                    {{ ds.relative_time|default('Unknown') }}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="empty-state">
+    <p>No datasets in this category.</p>
+    <p><a href="/browse/">Browse all categories</a></p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if datasets %}
+<script src="/static/filter.js"></script>
+{% endif %}
 {% endblock %}

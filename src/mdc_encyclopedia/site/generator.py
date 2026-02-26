@@ -78,7 +78,7 @@ def generate_site(db_path: str, output_dir: str = "site") -> dict:
     stats["homepage"] = 1
 
     _render_browse_pages(env, site_data, output_dir)
-    stats["browse_pages"] = len(site_data["categories"])
+    stats["browse_pages"] = 1 + len(site_data["categories"])  # all-datasets + per-category
 
     _render_dataset_pages(env, site_data, output_dir)
     stats["dataset_pages"] = len(site_data["datasets"])
@@ -180,26 +180,84 @@ def _render_homepage(env, site_data, output_dir):
 def _render_browse_pages(env, site_data, output_dir):
     """Render category browse pages.
 
-    Creates browse/index.html (all categories) and browse/{category-slug}.html
-    for each category.
+    Creates browse/index.html (all datasets) and
+    browse/{category-slug}/index.html for each category.
+    Extracts unique formats, publishers, and tags for filter dropdowns.
 
     Args:
         env: Jinja2 Environment.
         site_data: Complete site data dict.
         output_dir: Root output directory.
     """
-    categories = site_data["categories"]
+    from slugify import slugify as _slugify
 
-    # Browse index page
+    categories = site_data["categories"]
+    all_datasets = site_data["datasets"]
+
+    # "Browse All Datasets" page at /browse/index.html
+    all_formats, all_publishers, all_tags = _extract_filter_options(all_datasets)
     context = {
-        "page_title": "Browse Datasets",
-        "categories": categories,
-        "stats": site_data["stats"],
+        "page_title": "Browse All Datasets",
+        "category_name": "Browse All Datasets",
+        "datasets": all_datasets,
+        "dataset_count": len(all_datasets),
+        "formats": sorted(all_formats),
+        "publishers": sorted(all_publishers),
+        "tags": sorted(all_tags),
         "generated_at": site_data["generated_at"],
     }
     _render_page(
         env, "browse.html", context, os.path.join(output_dir, "browse", "index.html")
     )
+
+    # Per-category browse pages at /browse/{category-slug}/index.html
+    for cat_name, cat_datasets in categories.items():
+        cat_slug = _slugify(cat_name) if cat_name else "uncategorized"
+        cat_formats, cat_publishers, cat_tags = _extract_filter_options(cat_datasets)
+        context = {
+            "page_title": cat_name,
+            "category_name": cat_name,
+            "datasets": cat_datasets,
+            "dataset_count": len(cat_datasets),
+            "formats": sorted(cat_formats),
+            "publishers": sorted(cat_publishers),
+            "tags": sorted(cat_tags),
+            "generated_at": site_data["generated_at"],
+        }
+        _render_page(
+            env,
+            "browse.html",
+            context,
+            os.path.join(output_dir, "browse", cat_slug, "index.html"),
+        )
+
+
+def _extract_filter_options(datasets):
+    """Extract unique formats, publishers, and tags from a list of datasets.
+
+    Args:
+        datasets: List of dataset dicts.
+
+    Returns:
+        Tuple of (formats, publishers, tags) as lists of unique lowercase strings.
+    """
+    formats = set()
+    publishers = set()
+    tags = set()
+
+    for ds in datasets:
+        fmt = (ds.get("format") or "").strip()
+        if fmt:
+            formats.add(fmt.lower())
+        pub = (ds.get("publisher") or "").strip()
+        if pub:
+            publishers.add(pub.lower())
+        for tag in ds.get("tags_list", []):
+            tag = tag.strip()
+            if tag:
+                tags.add(tag.lower())
+
+    return list(formats), list(publishers), list(tags)
 
 
 def _render_dataset_pages(env, site_data, output_dir):
