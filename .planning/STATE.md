@@ -2,26 +2,25 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-24)
+See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 7: Deployment (In Progress)
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 7 of 7 (Deployment)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-02-26 -- Completed 07-01-PLAN.md (GitHub Actions workflow + Pages deployment)
+Phase: v1.0 complete (7 phases, 18 plans)
+Status: Milestone shipped
+Last activity: 2026-02-26 -- Completed v1.0 milestone
 
-Progress: [████████░░] 85%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
-- Average duration: 2.8min
-- Total execution time: 0.80 hours
+- Total plans completed: 18
+- Average duration: 2.7min
+- Total execution time: ~49min
 
 **By Phase:**
 
@@ -33,110 +32,24 @@ Progress: [████████░░] 85%
 | 4. Quality Audit | 2 | 5min | 2.5min |
 | 5. Change Detection | 2 | 4min | 2min |
 | 6. Static Site | 5 | 21min | 4.2min |
-| 7. Deployment | 1 | 2min | 2min |
-
-**Recent Trend:**
-- Last 5 plans: 06-03 (5min), 06-04 (7min), 06-05 (1min), 07-01 (2min)
-- Trend: Consistent
-
-*Updated after each plan completion*
-| Phase 02 P01 | 3min | 2 tasks | 5 files |
-| Phase 02 P02 | 3min | 2 tasks | 2 files |
-| Phase 02 P03 | 2min | 2 tasks | 2 files |
-| Phase 03 P01 | 3min | 2 tasks | 6 files |
-| Phase 03 P02 | 2min | 1 tasks | 1 files |
-| Phase 04 P01 | 3min | 2 tasks | 3 files |
-| Phase 04 P02 | 2min | 2 tasks | 1 files |
-| Phase 05 P01 | 2min | 2 tasks | 3 files |
-| Phase 05 P02 | 2min | 2 tasks | 1 files |
-| Phase 06 P01 | 4min | 2 tasks | 14 files |
-| Phase 06 P02 | 4min | 2 tasks | 6 files |
-| Phase 06 P03 | 5min | 2 tasks | 6 files |
-| Phase 06 P04 | 7min | 2 tasks | 6 files |
-| Phase 06 P05 | 1min | 2 tasks | 3 files |
-| Phase 07 P01 | 2min | 2 tasks | 2 files |
+| 7. Deployment | 2 | 2min | 1min |
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Roadmap]: 7-phase pipeline architecture following strict dependency chain (storage -> ingestion -> enrichment/audit/diff -> site -> deploy)
-- [Roadmap]: Phases 3, 4, 5 all depend on Phase 2 but are sequenced linearly for solo developer execution
-- [01-01]: Used PRAGMA user_version for schema versioning instead of a schema_version table
-- [01-01]: Added json_valid CHECK fallback for Python builds without JSON1 extension
-- [01-02]: Used rich_click as drop-in replacement for click for automatic Rich formatting
-- [01-02]: Database path configurable via MDC_ENCYCLOPEDIA_DB env var, defaulting to mdc_encyclopedia.db
-- [02-01]: Used synchronous httpx (not async) since rate limiting at 1 req/s makes async pointless
-- [02-01]: Within-catalog dedup uses normalized title exact match per locked decision (no fuzzy matching)
-- [02-01]: Download URL constructed for Feature Services only; None for File Geodatabases
-- [02-01]: Rate limiting via time.sleep before each request ensures compliance regardless of retry state
-- [02-02]: Single ArcGIS Hub progress stage (no Socrata) since research confirmed no Socrata portal exists for Miami-Dade
-- [02-02]: Field fetch errors return empty list instead of raising -- individual dataset failures never crash the pull
-- [02-02]: Dedup panel shown by default with summary counts; --verbose shows per-pair detail
-- [02-03]: Used os.path.expanduser + os.path.join for XDG path instead of platformdirs dependency
-- [02-03]: Default DB at ~/.local/share/mdc-encyclopedia/mdc_encyclopedia.db follows XDG Base Directory Spec
-- [02-03]: Parent dir guard uses if parent: to avoid empty-string makedirs for bare filenames
-- [03-01]: Column metadata in prompts truncated at 30 entries for prompt size control
-- [03-01]: Tags field handled as both JSON array and plain string for robustness
-- [03-01]: 0.1s delay between count_tokens calls to avoid rate limiting
-- [03-02]: Resume flag is UX-only -- query always returns unenriched datasets via LEFT JOIN
-- [03-02]: Cost confirmation auto-proceeds under $5, prompts above $5 threshold
-- [03-02]: API key validated before column lookup to fail fast on missing credentials
-- [03-02]: 1-second delay between enrichment API calls matching project rate limiting pattern
-- [04-01]: FREQUENCY_DAYS uses generous grace periods (weekly=14d, monthly=45d, annually=400d) for government data
-- [04-01]: Static/one-time datasets score 1.0 but scored=False for N/A weight redistribution
-- [04-01]: Completeness gives 0.3 partial credit for unavailable row_count (not as bad as 0 rows)
-- [04-01]: normalize_frequency uses substring fallback for free-text variants from Claude enrichment
-- [04-02]: Grade distribution queried from DB after all upserts for consistency (not accumulated in memory)
-- [04-02]: Stats command sections are conditional: quality distribution and top findings only shown when audit data exists
-- [04-02]: Top findings aggregated from findings_json across all audit_scores using Counter.most_common(5)
-- [05-01]: Shared detected_at timestamp generated once per compute_changes call ensures batch grouping
-- [05-01]: Removed dataset title stored in details JSON as defensive measure against future cleanup
-- [05-01]: First-pull returns zeros immediately without inserting records (caller handles messaging)
-- [05-01]: insert_change does NOT commit; compute_changes commits once after all batch inserts
-- [05-02]: defaultdict import moved to top-level alongside existing Counter from collections
-- [05-02]: Default diff is --latest (most recent pull only) for day-to-day usability
-- [05-02]: Removed dataset title resolved from details JSON first, then LEFT JOIN, then dataset_id fallback
-- [05-02]: Hint about --all shown only when more batches exist beyond the displayed one
-- [06-01]: Used python-slugify for URL slug generation with collision detection via dataset ID suffix
-- [06-01]: Pure CSS hamburger menu (checkbox hack) to avoid JavaScript dependency for navigation
-- [06-01]: Related datasets scored by category match (3 pts) plus shared keywords (1 pt each)
-- [06-01]: Added force-include in pyproject.toml to ensure templates and static files ship in wheel
-- [06-02]: Lunr.js CDN (jsdelivr v2.3.9) loaded globally; field boosts title(10) > keywords(8) > description(5) > dept/cat(3)
-- [06-02]: Wildcard suffix on search queries for as-you-type; try-catch fallback for Lunr syntax errors
-- [06-02]: Homepage category grid caps at 15 categories; recently updated section conditionally rendered
-- [06-03]: Dataset detail page uses 7-section layout: breadcrumbs, AI description, use cases, metadata table, columns, related datasets, quality breakdown
-- [06-03]: Browse pages use data attributes (data-format, data-publisher, data-tags) for zero-dependency client-side filtering
-- [06-03]: Dataset pages at /dataset/{slug}/index.html, browse pages at /browse/{slug}/index.html for clean URLs
-- [06-03]: Context pipeline extended with category_slug, tags_text, and audit dict for template consumption
-- [06-04]: new_this_week computed from changes table (added in last 7 days) instead of dataset updated_at for accuracy
-- [06-04]: Disclaimer box uses red border and background for maximum visual prominence
-- [06-04]: Grade distribution uses CSS-only horizontal bars (width proportional to percentage)
-- [06-04]: Below-threshold dimension counts use 0.5 cutoff; stale datasets use 0.4 freshness cutoff
-- [06-05]: Used python-slugify as Jinja2 filter to match generator slug logic exactly in templates
-- [06-05]: Directory URLs (/dataset/{slug}/) instead of file URLs (/dataset/{slug}.html) for search results
-- [07-01]: Artifact-based Pages deployment (no gh-pages branch needed)
-- [07-01]: DB committed to repo for persistence (actions/cache evicts after 7 days, too risky)
-- [07-01]: Monday 6AM UTC cron for weekly pipeline; push-to-master fast path (export + deploy only)
-- [07-01]: [skip ci] in bot commit messages prevents infinite push trigger loops
-- [07-01]: Haiku model pinned in CI for cost savings; Sonnet suggested in manual enrichment issue
+All v1.0 decisions archived in PROJECT.md Key Decisions table and phase SUMMARY.md files.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-- [Phase 2]: Socrata SODA3 migration status for Miami-Dade is uncertain -- need live API discovery spike before writing client code
-- [Phase 2]: ArcGIS Hub API v3 docs are from a 2019 unofficial gist -- validate response shape with live requests
-- [Phase 3]: Enrichment prompt structure needs iteration on 15-20 real datasets before full-catalog run
-- [Phase 6]: Lunr.js search index size needs measurement after first full export -- target under 500KB
+(Cleared — all v1.0 blockers resolved)
 
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 07-01-PLAN.md (GitHub Actions workflow + Pages deployment)
+Stopped at: Completed v1.0 milestone archival
 Resume file: None
