@@ -1,8 +1,11 @@
 """CLI entry point for MDC Open Data Encyclopedia."""
 
+import json
 import logging
 import os
 import time
+from collections import Counter
+from datetime import datetime, timezone
 
 import anthropic
 import rich_click as click
@@ -18,12 +21,15 @@ from rich.progress import (
 )
 from rich.table import Table
 
+from mdc_encyclopedia.audit.scorer import audit_dataset
 from mdc_encyclopedia.db import (
+    get_all_datasets_for_audit,
     get_columns_for_dataset,
     get_connection,
     get_unenriched_datasets,
     init_db,
     insert_enrichment,
+    upsert_audit_score,
     upsert_columns,
     upsert_dataset,
 )
@@ -364,9 +370,83 @@ def enrich(ctx, dry_run, resume, model, limit):
 
 
 @cli.command()
-def audit():
+@click.pass_context
+def audit(ctx):
     """Run quality audit on all datasets."""
-    console.print("[yellow]Not yet implemented[/yellow]")
+    db_path = ctx.obj["db_path"]
+    conn = get_connection(db_path)
+
+    datasets = get_all_datasets_for_audit(conn)
+
+    if not datasets:
+        console.print("[yellow]No datasets found. Run `mdc-encyclopedia pull` first.[/yellow]")
+        conn.close()
+        return
+
+    now = datetime.now(timezone.utc)
+    findings_counter: Counter = Counter()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TextColumn("datasets"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Auditing", total=len(datasets))
+
+        for dataset_row in datasets:
+            result = audit_dataset(dataset_row, now)
+            upsert_audit_score(
+                conn,
+                dataset_row["id"],
+                result["composite_score"],
+                result["letter_grade"],
+                result["staleness"],
+                result["completeness"],
+                result["documentation"],
+                json.dumps(result["findings"]),
+            )
+            # Accumulate findings for top-findings summary
+            for finding in result["findings"]:
+                findings_counter[finding] += 1
+            progress.advance(task)
+
+    # Grade distribution from the database
+    grade_rows = conn.execute(
+        "SELECT letter_grade, COUNT(*) as cnt FROM audit_scores GROUP BY letter_grade ORDER BY letter_grade"
+    ).fetchall()
+
+    grade_table = Table(title="Audit Summary - Grade Distribution")
+    grade_table.add_column("Grade", style="bold")
+    grade_table.add_column("Count", justify="right")
+    grade_table.add_column("Bar")
+
+    for row in grade_rows:
+        grade = row["letter_grade"]
+        count = row["cnt"]
+        bar = "\u2588" * min(count, 50)
+        grade_table.add_row(grade, str(count), bar)
+
+    grade_table.add_section()
+    grade_table.add_row("Total", str(len(datasets)), "")
+
+    console.print(grade_table)
+
+    # Top findings
+    if findings_counter:
+        findings_table = Table(title="Top Findings")
+        findings_table.add_column("Finding", style="bold")
+        findings_table.add_column("Count", justify="right")
+
+        for finding, count in findings_counter.most_common(5):
+            findings_table.add_row(finding, str(count))
+
+        console.print(findings_table)
+
+    conn.close()
 
 
 @cli.command()
