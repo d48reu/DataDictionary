@@ -1,0 +1,152 @@
+name: Encyclopedia Pipeline
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 6:00 UTC (1:00 AM EST)
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      skip_enrichment:
+        description: 'Skip the enrichment step entirely'
+        type: boolean
+        default: false
+      force_enrich:
+        description: 'Override 25-dataset threshold and enrich all'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  issues: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  MDC_ENCYCLOPEDIA_DB: ./mdc_encyclopedia.db
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install package
+        run: pip install .
+
+      # --- Full pipeline (cron + manual dispatch only) ---
+
+      - name: Pull latest data
+        if: github.event_name != 'push'
+        run: mdc-encyclopedia pull
+
+      - name: Run audit
+        if: github.event_name != 'push'
+        run: mdc-encyclopedia audit
+
+      - name: Detect changes
+        if: github.event_name != 'push'
+        run: mdc-encyclopedia diff || true
+
+      - name: Enrich new datasets (conditional)
+        if: github.event_name != 'push'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Skip if user requested skip_enrichment
+          if [ "${{ inputs.skip_enrichment }}" = "true" ]; then
+            echo "Enrichment skipped via skip_enrichment input"
+            exit 0
+          fi
+
+          # Skip if no API key is configured
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "No ANTHROPIC_API_KEY set, skipping enrichment"
+            exit 0
+          fi
+
+          # Count new datasets from the most recent diff batch
+          NEW_COUNT=$(python3 -c "
+          import sqlite3, os
+          conn = sqlite3.connect(os.environ['MDC_ENCYCLOPEDIA_DB'])
+          conn.row_factory = sqlite3.Row
+          row = conn.execute('''
+              SELECT COUNT(*) as cnt FROM changes
+              WHERE change_type = 'added'
+              AND detected_at = (SELECT MAX(detected_at) FROM changes)
+          ''').fetchone()
+          print(row['cnt'] if row else 0)
+          conn.close()
+          ")
+          echo "New datasets found: $NEW_COUNT"
+
+          # If 25+ new datasets and force_enrich is not set, skip and create issue
+          if [ "$NEW_COUNT" -ge 25 ] && [ "${{ inputs.force_enrich }}" != "true" ]; then
+            echo "Threshold exceeded ($NEW_COUNT >= 25), skipping enrichment and creating issue"
+            gh issue create \
+              --title "Manual enrichment needed: $NEW_COUNT new datasets" \
+              --body "$(cat <<EOF
+          ## Auto-enrichment skipped
+
+          The weekly pull on $(date -u +%Y-%m-%d) found **$NEW_COUNT new datasets**, exceeding the 25-dataset threshold.
+
+          ### Suggested action
+
+          For higher quality (Sonnet):
+          \`\`\`bash
+          mdc-encyclopedia enrich --model claude-sonnet-4-5-20250929
+          \`\`\`
+
+          For cost savings (Haiku, same as CI):
+          \`\`\`bash
+          mdc-encyclopedia enrich --model claude-haiku-4-5-20251001
+          \`\`\`
+          EOF
+          )" \
+              --label "enrichment"
+            exit 0
+          fi
+
+          # Enrich with Haiku model
+          mdc-encyclopedia enrich --model claude-haiku-4-5-20251001
+
+      - name: Commit database updates
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add mdc_encyclopedia.db
+          git diff --staged --quiet || git commit -m "chore: update encyclopedia database [skip ci]"
+          git push
+
+      # --- Export + Deploy (all triggers) ---
+
+      - name: Export static site
+        run: mdc-encyclopedia export -o site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+  deploy:
+    needs: pipeline
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
