@@ -66,9 +66,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CLI-01**: Installable via `pip install .` with pyproject.toml and Hatchling backend
 - [x] **CLI-02**: Entry point `mdc-encyclopedia` available after install
 - [x] **CLI-03**: `pull` command fetches metadata from both portals
-- [ ] **CLI-04**: `stats` command shows database summary (dataset counts, enrichment status, quality overview)
+- [x] **CLI-04**: `stats` command shows database summary (dataset counts, enrichment status, quality overview)
 - [x] **CLI-05**: `enrich` command runs AI enrichment pipeline
-- [ ] **CLI-06**: `audit` command runs quality audit
+- [x] **CLI-06**: `audit` command runs quality audit
 - [ ] **CLI-07**: `diff` command shows changes between pulls
 - [ ] **CLI-08**: `export` command generates static site in site/ directory
 - [ ] **CLI-09**: `serve` command starts local preview server for the static site
@@ -169,9 +169,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-01 | Phase 1 | Complete |
 | CLI-02 | Phase 1 | Complete |
 | CLI-03 | Phase 2 | Complete |
-| CLI-04 | Phase 4 | Pending |
+| CLI-04 | Phase 4 | Complete |
 | CLI-05 | Phase 3 | Complete |
-| CLI-06 | Phase 4 | Pending |
+| CLI-06 | Phase 4 | Complete |
 | CLI-07 | Phase 5 | Pending |
 | CLI-08 | Phase 6 | Pending |
 | CLI-09 | Phase 6 | Pending |

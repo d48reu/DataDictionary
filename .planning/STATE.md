@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 4 of 7 (Quality Audit)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-02-26 -- Completed 04-01-PLAN.md (Schema V2 migration and scoring engine)
+Phase: 4 of 7 (Quality Audit) -- COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-02-26 -- Completed 04-02-PLAN.md (CLI audit and stats commands)
 
-Progress: [██████░░░░] 57%
+Progress: [██████░░░░] 64%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 2.5min
-- Total execution time: 0.33 hours
+- Total plans completed: 9
+- Average duration: 2.4min
+- Total execution time: 0.37 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 57%
 | 1. Foundation | 2 | 4min | 2min |
 | 2. Data Ingestion | 3 | 8min | 2.7min |
 | 3. AI Enrichment | 2 | 5min | 2.5min |
-| 4. Quality Audit | 1 | 3min | 3min |
+| 4. Quality Audit | 2 | 5min | 2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (2min), 03-01 (3min), 03-02 (2min), 04-01 (3min)
+- Last 5 plans: 03-01 (3min), 03-02 (2min), 04-01 (3min), 04-02 (2min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -43,6 +43,7 @@ Progress: [██████░░░░] 57%
 | Phase 03 P01 | 3min | 2 tasks | 6 files |
 | Phase 03 P02 | 2min | 1 tasks | 1 files |
 | Phase 04 P01 | 3min | 2 tasks | 3 files |
+| Phase 04 P02 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [04-01]: Static/one-time datasets score 1.0 but scored=False for N/A weight redistribution
 - [04-01]: Completeness gives 0.3 partial credit for unavailable row_count (not as bad as 0 rows)
 - [04-01]: normalize_frequency uses substring fallback for free-text variants from Claude enrichment
+- [04-02]: Grade distribution queried from DB after all upserts for consistency (not accumulated in memory)
+- [04-02]: Stats command sections are conditional: quality distribution and top findings only shown when audit data exists
+- [04-02]: Top findings aggregated from findings_json across all audit_scores using Counter.most_common(5)
 
 ### Pending Todos
 
@@ -93,5 +97,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 04-01-PLAN.md (Schema V2 migration and three-dimension scoring engine)
+Stopped at: Completed 04-02-PLAN.md (CLI audit and stats commands -- Phase 4 complete)
 Resume file: None
