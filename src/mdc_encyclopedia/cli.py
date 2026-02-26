@@ -474,9 +474,107 @@ def audit(ctx):
 
 
 @cli.command()
-def diff():
-    """Show changes between the current and previous catalog pulls."""
-    console.print("[yellow]Not yet implemented[/yellow]")
+@click.option("--latest", is_flag=True, default=True,
+              help="Show only the most recent pull's changes (default).")
+@click.option("--all", "show_all", is_flag=True, default=False,
+              help="Show full change history across all pulls.")
+@click.pass_context
+def diff(ctx, latest, show_all):
+    """Show changes between catalog pulls."""
+    db_path = ctx.obj["db_path"]
+    conn = get_connection(db_path)
+
+    changes = get_recent_changes(conn)
+
+    if not changes:
+        console.print(
+            "[yellow]No changes recorded yet. "
+            "Changes are tracked starting from the second pull.[/yellow]"
+        )
+        conn.close()
+        return
+
+    # Group changes by detected_at timestamp (each pull produces one batch)
+    batches = defaultdict(list)
+    for change in changes:
+        batches[change["detected_at"]].append(change)
+
+    # Sort batches by timestamp descending (most recent first)
+    sorted_timestamps = sorted(batches.keys(), reverse=True)
+
+    # If --latest (default, unless --all), only show most recent batch
+    if not show_all:
+        sorted_timestamps = sorted_timestamps[:1]
+
+    for ts in sorted_timestamps:
+        batch = batches[ts]
+        table = Table(title=f"Changes detected: {ts}")
+        table.add_column("Type", style="bold", width=12)
+        table.add_column("Dataset", no_wrap=False)
+        table.add_column("Details", no_wrap=False)
+
+        for change in batch:
+            change_type = change["change_type"]
+            # Use dataset title if available, fall back to dataset_id
+            dataset_label = change.get("title") or change["dataset_id"]
+
+            if change_type == "added":
+                style = "green"
+                type_label = "+ Added"
+                detail = ""
+            elif change_type == "removed":
+                style = "red"
+                type_label = "- Removed"
+                # Try to get title from details JSON (stored defensively)
+                detail = ""
+                if change.get("details"):
+                    try:
+                        d = json.loads(change["details"])
+                        if d.get("title") and not change.get("title"):
+                            dataset_label = d["title"]
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+            else:  # schema_changed
+                style = "yellow"
+                type_label = "~ Schema"
+                detail = ""
+                if change.get("details"):
+                    try:
+                        d = json.loads(change["details"])
+                        parts = []
+                        if d.get("columns_added"):
+                            parts.append(f"+{len(d['columns_added'])} cols")
+                        if d.get("columns_removed"):
+                            parts.append(f"-{len(d['columns_removed'])} cols")
+                        detail = ", ".join(parts)
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+            table.add_row(type_label, dataset_label[:80], detail, style=style)
+
+        # Add summary row
+        added_count = sum(1 for c in batch if c["change_type"] == "added")
+        removed_count = sum(1 for c in batch if c["change_type"] == "removed")
+        schema_count = sum(1 for c in batch if c["change_type"] == "schema_changed")
+
+        table.add_section()
+        table.add_row(
+            "Total",
+            f"{len(batch)} change(s)",
+            f"{added_count} added, {removed_count} removed, {schema_count} schema",
+            style="bold",
+        )
+
+        console.print(table)
+
+    if not show_all and len(list(batches.keys())) > 1:
+        total_batches = len(batches)
+        console.print(
+            f"\n[dim]Showing latest pull only. "
+            f"Use --all to see all {total_batches} recorded pull(s).[/dim]"
+        )
+
+    conn.close()
 
 
 @cli.command()
