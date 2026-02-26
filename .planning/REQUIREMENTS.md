@@ -94,6 +94,11 @@ Deferred to future release. Tracked but not in current roadmap.
 - **EXPORT-01**: Downloadable catalog as JSON/CSV for developers
 - **EXPORT-02**: Embeddable dataset card widgets for other civic sites
 
+### Field-Level Enrichment
+
+- **FIELD-01**: AI generates plain-English descriptions for individual dataset fields/columns (e.g., what does `AVG_DIST_FROM` actually mean?)
+- **FIELD-02**: Field descriptions stored alongside existing column metadata in SQLite
+
 ### Multi-Jurisdiction
 
 - **MULTI-01**: Support additional South Florida jurisdictions (Broward, City of Miami)
