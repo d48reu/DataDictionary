@@ -64,7 +64,7 @@ def build_search_index(datasets: list[dict], output_dir: str) -> dict:
             "title": title,
             "snippet": snippet,
             "department": department,
-            "url": f"/dataset/{slug}.html",
+            "url": f"/dataset/{slug}/",
             "grade": ds.get("letter_grade") or "",
         }
 
