@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 6: Static Site (Complete)
+**Current focus:** Phase 7: Deployment (In Progress)
 
 ## Current Position
 
-Phase: 6 of 7 (Static Site)
-Plan: 5 of 5 in current phase
-Status: Phase Complete
-Last activity: 2026-02-26 -- Completed 06-05-PLAN.md (URL bug fixes / gap closure)
+Phase: 7 of 7 (Deployment)
+Plan: 1 of 2 in current phase
+Status: Executing
+Last activity: 2026-02-26 -- Completed 07-01-PLAN.md (GitHub Actions workflow + Pages deployment)
 
-Progress: [██████████] 100%
+Progress: [████████░░] 85%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 17
 - Average duration: 2.8min
-- Total execution time: 0.77 hours
+- Total execution time: 0.80 hours
 
 **By Phase:**
 
@@ -33,9 +33,10 @@ Progress: [██████████] 100%
 | 4. Quality Audit | 2 | 5min | 2.5min |
 | 5. Change Detection | 2 | 4min | 2min |
 | 6. Static Site | 5 | 21min | 4.2min |
+| 7. Deployment | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 06-01 (4min), 06-02 (4min), 06-03 (5min), 06-04 (7min), 06-05 (1min)
+- Last 5 plans: 06-03 (5min), 06-04 (7min), 06-05 (1min), 07-01 (2min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -53,6 +54,7 @@ Progress: [██████████] 100%
 | Phase 06 P03 | 5min | 2 tasks | 6 files |
 | Phase 06 P04 | 7min | 2 tasks | 6 files |
 | Phase 06 P05 | 1min | 2 tasks | 3 files |
+| Phase 07 P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -116,6 +118,11 @@ Recent decisions affecting current work:
 - [06-04]: Below-threshold dimension counts use 0.5 cutoff; stale datasets use 0.4 freshness cutoff
 - [06-05]: Used python-slugify as Jinja2 filter to match generator slug logic exactly in templates
 - [06-05]: Directory URLs (/dataset/{slug}/) instead of file URLs (/dataset/{slug}.html) for search results
+- [07-01]: Artifact-based Pages deployment (no gh-pages branch needed)
+- [07-01]: DB committed to repo for persistence (actions/cache evicts after 7 days, too risky)
+- [07-01]: Monday 6AM UTC cron for weekly pipeline; push-to-master fast path (export + deploy only)
+- [07-01]: [skip ci] in bot commit messages prevents infinite push trigger loops
+- [07-01]: Haiku model pinned in CI for cost savings; Sonnet suggested in manual enrichment issue
 
 ### Pending Todos
 
@@ -131,5 +138,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 06-05-PLAN.md (URL bug fixes / gap closure)
+Stopped at: Completed 07-01-PLAN.md (GitHub Actions workflow + Pages deployment)
 Resume file: None

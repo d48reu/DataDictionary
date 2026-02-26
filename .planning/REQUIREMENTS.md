@@ -76,9 +76,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Deployment
 
-- [ ] **DEPLOY-01**: Static site deploys to GitHub Pages
-- [ ] **DEPLOY-02**: GitHub Actions workflow runs weekly (pull + auto-enrich new + audit + export + deploy)
-- [ ] **DEPLOY-03**: ANTHROPIC_API_KEY handled as GitHub Secret (optional — workflow runs without it, skipping enrichment)
+- [x] **DEPLOY-01**: Static site deploys to GitHub Pages
+- [x] **DEPLOY-02**: GitHub Actions workflow runs weekly (pull + auto-enrich new + audit + export + deploy)
+- [x] **DEPLOY-03**: ANTHROPIC_API_KEY handled as GitHub Secret (optional — workflow runs without it, skipping enrichment)
 
 ## v2 Requirements
 
@@ -176,9 +176,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-08 | Phase 6 | Complete |
 | CLI-09 | Phase 6 | Complete |
 | CLI-10 | Phase 1 | Complete |
-| DEPLOY-01 | Phase 7 | Pending |
-| DEPLOY-02 | Phase 7 | Pending |
-| DEPLOY-03 | Phase 7 | Pending |
+| DEPLOY-01 | Phase 7 | Complete |
+| DEPLOY-02 | Phase 7 | Complete |
+| DEPLOY-03 | Phase 7 | Complete |
 
 **Coverage:**
 - v1 requirements: 52 total
