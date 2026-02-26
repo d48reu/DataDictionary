@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Data Ingestion** - Pull full catalog metadata from Socrata and ArcGIS Hub into SQLite
 - [x] **Phase 3: AI Enrichment** - Claude-powered plain-English descriptions, use cases, keywords, and civic relevance for every dataset
 - [x] **Phase 4: Quality Audit** - Staleness detection, completeness scoring, and quality grades for every dataset
-- [ ] **Phase 5: Change Detection** - Diff between pulls identifying new, removed, and schema-changed datasets
+- [x] **Phase 5: Change Detection** - Diff between pulls identifying new, removed, and schema-changed datasets
 - [ ] **Phase 6: Static Site** - Searchable, browsable HTML encyclopedia with dataset pages, quality reports, and change history
 - [ ] **Phase 7: Deployment** - GitHub Actions weekly refresh and GitHub Pages hosting
 
@@ -96,7 +96,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Diff detection engine: snapshot capture, set-based comparison, and change record storage
-- [ ] 05-02-PLAN.md — CLI integration: pull command diff tracking and diff display command
+- [x] 05-02-PLAN.md — CLI integration: pull command diff tracking and diff display command
 
 ### Phase 6: Static Site
 **Goal**: A fully static, searchable HTML encyclopedia where residents can browse, search, and understand every Miami-Dade dataset
@@ -143,6 +143,6 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 | 2. Data Ingestion | 3/3 | Complete | 2026-02-25 |
 | 3. AI Enrichment | 2/2 | Complete | 2026-02-25 |
 | 4. Quality Audit | 2/2 | Complete | 2026-02-26 |
-| 5. Change Detection | 1/2 | In Progress | - |
+| 5. Change Detection | 2/2 | Complete | 2026-02-26 |
 | 6. Static Site | 0/TBD | Not started | - |
 | 7. Deployment | 0/TBD | Not started | - |
