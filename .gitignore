@@ -19,6 +19,7 @@ ENV/
 
 # SQLite databases
 *.db
+!mdc_encyclopedia.db
 
 # IDE
 .idea/
@@ -35,3 +36,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Generated site
+site/
