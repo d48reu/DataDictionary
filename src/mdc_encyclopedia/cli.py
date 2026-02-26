@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
 import anthropic
@@ -26,6 +26,7 @@ from mdc_encyclopedia.db import (
     get_all_datasets_for_audit,
     get_columns_for_dataset,
     get_connection,
+    get_recent_changes,
     get_unenriched_datasets,
     init_db,
     insert_enrichment,
@@ -33,6 +34,7 @@ from mdc_encyclopedia.db import (
     upsert_columns,
     upsert_dataset,
 )
+from mdc_encyclopedia.diff.detector import capture_snapshot, compute_changes
 from mdc_encyclopedia.enrichment.client import (
     create_enrichment_client,
     enrich_dataset,
@@ -80,6 +82,9 @@ def pull(ctx, verbose):
     db_path = ctx.obj["db_path"]
     conn = get_connection(db_path)
     client = create_client()
+
+    pre_snapshot = capture_snapshot(conn)
+    is_first_pull = len(pre_snapshot["dataset_ids"]) == 0
 
     new_count = 0
     updated_count = 0
@@ -210,7 +215,26 @@ def pull(ctx, verbose):
             fail_table.add_row(ds_id, error[:80])
         console.print(fail_table)
 
-    # Stage 5: Cleanup
+    # Stage 5: Change Detection
+    if is_first_pull:
+        total_now = conn.execute("SELECT COUNT(*) FROM datasets").fetchone()[0]
+        console.print(
+            f"[green]First pull -- {total_now} datasets cataloged. "
+            f"Future pulls will show changes.[/green]"
+        )
+    else:
+        post_snapshot = capture_snapshot(conn)
+        summary = compute_changes(conn, pre_snapshot, post_snapshot)
+        if summary["added"] or summary["removed"] or summary["schema_changed"]:
+            console.print(
+                f"[cyan]{summary['added']} added, {summary['removed']} removed, "
+                f"{summary['schema_changed']} with column changes. "
+                f"Run `diff` for details.[/cyan]"
+            )
+        else:
+            console.print("[green]No changes detected since last pull.[/green]")
+
+    # Stage 6: Cleanup
     conn.close()
     client.close()
 
