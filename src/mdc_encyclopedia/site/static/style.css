@@ -1,0 +1,475 @@
+/* MDC Data Encyclopedia - Complete CSS System */
+
+/* ===== CSS Custom Properties ===== */
+:root {
+    --mdc-blue: #003366;
+    --mdc-amber: #d4a017;
+    --mdc-white: #ffffff;
+    --mdc-light-gray: #e9ecef;
+    --mdc-dark-gray: #495057;
+    --mdc-text: #212529;
+    --mdc-bg: #f8f9fa;
+    --mdc-footer-bg: #1a1a2e;
+    --mdc-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --mdc-radius: 6px;
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--mdc-bg);
+    color: var(--mdc-text);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== Typography ===== */
+h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--mdc-blue);
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--mdc-blue);
+}
+
+h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--mdc-blue);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ===== Navigation ===== */
+.top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--mdc-blue);
+    color: var(--mdc-white);
+    box-shadow: var(--mdc-shadow);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+}
+
+.nav-brand {
+    color: var(--mdc-white);
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.nav-brand:hover {
+    text-decoration: none;
+    color: var(--mdc-amber);
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.nav-links a {
+    color: var(--mdc-white);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--mdc-radius);
+    transition: background 0.2s;
+    font-size: 0.9rem;
+}
+
+.nav-links a:hover {
+    background: rgba(255, 255, 255, 0.15);
+    text-decoration: none;
+}
+
+/* Hamburger menu */
+.nav-toggle-checkbox {
+    display: none;
+}
+
+.nav-toggle-label {
+    display: none;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.nav-toggle-label span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--mdc-white);
+    margin: 5px 0;
+    transition: transform 0.3s;
+}
+
+/* Nav search */
+.nav-search input {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--mdc-radius);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--mdc-white);
+    font-size: 0.85rem;
+    width: 200px;
+    outline: none;
+}
+
+.nav-search input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.nav-search input:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--mdc-amber);
+}
+
+/* ===== Content Area ===== */
+.content {
+    max-width: 1200px;
+    margin: 72px auto 2rem;
+    padding: 0 1rem;
+    flex: 1;
+    width: 100%;
+}
+
+/* ===== Letter Grade Badges ===== */
+.grade {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--mdc-white);
+}
+
+.grade-a {
+    background: #2e7d32;
+}
+
+.grade-b {
+    background: #558b2f;
+}
+
+.grade-c {
+    background: #f9a825;
+    color: var(--mdc-text);
+}
+
+.grade-d {
+    background: #e65100;
+}
+
+.grade-f {
+    background: #c62828;
+}
+
+.grade-none {
+    background: var(--mdc-light-gray);
+    color: var(--mdc-dark-gray);
+}
+
+/* ===== Freshness Dots ===== */
+.freshness-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 0.35rem;
+}
+
+.freshness-dot.green {
+    background: #2e7d32;
+}
+
+.freshness-dot.yellow {
+    background: #f9a825;
+}
+
+.freshness-dot.red {
+    background: #c62828;
+}
+
+.freshness-dot.gray {
+    background: #9e9e9e;
+}
+
+/* ===== Department Chips ===== */
+.chip {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    background: #e3f2fd;
+    color: var(--mdc-blue);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ===== Stat Cards ===== */
+.stat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.stat-card {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.stat-card .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--mdc-blue);
+    display: block;
+}
+
+.stat-card .stat-label {
+    font-size: 0.85rem;
+    color: var(--mdc-dark-gray);
+    margin-top: 0.25rem;
+    display: block;
+}
+
+/* ===== Dataset List Rows ===== */
+.dataset-row {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--mdc-light-gray);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    transition: background 0.15s;
+}
+
+.dataset-row:hover {
+    background: rgba(0, 51, 102, 0.03);
+}
+
+.dataset-row .dataset-grade {
+    flex-shrink: 0;
+}
+
+.dataset-row .dataset-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.dataset-row .dataset-title {
+    font-weight: 600;
+    color: var(--mdc-blue);
+    margin-bottom: 0.15rem;
+}
+
+.dataset-row .dataset-title a {
+    color: inherit;
+}
+
+.dataset-row .dataset-meta {
+    font-size: 0.85rem;
+    color: var(--mdc-dark-gray);
+}
+
+/* ===== Filter Bar ===== */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--mdc-light-gray);
+}
+
+.filter-bar select,
+.filter-bar input {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: var(--mdc-radius);
+    font-size: 0.85rem;
+    background: var(--mdc-white);
+}
+
+/* ===== Footer ===== */
+.site-footer {
+    background: var(--mdc-footer-bg);
+    color: var(--mdc-white);
+    padding: 2rem 1rem;
+    margin-top: auto;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.footer-disclaimer {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.footer-source {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.footer-source a {
+    color: var(--mdc-amber);
+}
+
+.footer-source a:hover {
+    text-decoration: underline;
+}
+
+.footer-generated {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ===== Utility Classes ===== */
+.text-muted {
+    color: var(--mdc-dark-gray);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+
+/* ===== Responsive: 768px ===== */
+@media (max-width: 768px) {
+    .nav-toggle-label {
+        display: block;
+    }
+
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--mdc-blue);
+        flex-direction: column;
+        padding: 0.5rem 0;
+        box-shadow: var(--mdc-shadow);
+    }
+
+    .nav-toggle-checkbox:checked ~ .nav-links {
+        display: flex;
+    }
+
+    .nav-links li {
+        width: 100%;
+    }
+
+    .nav-links a {
+        display: block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0;
+    }
+
+    .nav-search {
+        padding: 0.5rem 1.5rem;
+    }
+
+    .nav-search input {
+        width: 100%;
+    }
+
+    .content {
+        padding: 0 0.75rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+}
+
+/* ===== Responsive: 480px ===== */
+@media (max-width: 480px) {
+    .stat-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .dataset-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-bar select,
+    .filter-bar input {
+        width: 100%;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+}

@@ -577,16 +577,66 @@ def diff(ctx, latest, show_all):
     conn.close()
 
 
-@cli.command()
-def export():
+@cli.command(name="export")
+@click.option("--output", "-o", default="site", help="Output directory for the generated site.")
+@click.pass_context
+def export_site(ctx, output):
     """Generate static HTML site from the catalog database."""
-    console.print("[yellow]Not yet implemented[/yellow]")
+    from mdc_encyclopedia.site.generator import generate_site
+
+    db_path = ctx.obj["db_path"]
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        progress.add_task("Generating site...", total=None)
+        stats = generate_site(db_path, output)
+
+    table = Table(title="Export Summary")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", justify="right")
+    table.add_row("Dataset pages", str(stats.get("dataset_pages", 0)))
+    table.add_row("Category pages", str(stats.get("browse_pages", 0)))
+    table.add_row("Total pages", str(stats.get("total_pages", 0)))
+    table.add_row("Output directory", stats.get("output_dir", output))
+
+    console.print(table)
+    console.print(f"[green]Site generated in {output}/[/green]")
 
 
 @cli.command()
-def serve():
+@click.option("--port", "-p", default=8000, help="Port to serve on.")
+@click.option("--directory", "-d", default="site", help="Directory to serve.")
+def serve(port, directory):
     """Start a local preview server for the static site."""
-    console.print("[yellow]Not yet implemented[/yellow]")
+    import functools
+    import http.server
+    import socketserver
+
+    if not os.path.isdir(directory):
+        console.print(
+            f"[red]Directory '{directory}' does not exist. "
+            f"Run `mdc-encyclopedia export` first.[/red]"
+        )
+        raise click.Abort()
+
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=directory
+    )
+
+    console.print(
+        f"[green]Serving {directory}/ at http://localhost:{port}[/green]"
+    )
+    console.print("[dim]Press Ctrl+C to stop.[/dim]")
+
+    try:
+        with socketserver.TCPServer(("", port), handler) as httpd:
+            httpd.serve_forever()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Server stopped.[/yellow]")
 
 
 @cli.command()
