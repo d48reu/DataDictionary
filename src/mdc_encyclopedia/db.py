@@ -318,6 +318,107 @@ def insert_enrichment(
     conn.commit()
 
 
+def get_dataset_ids(conn: sqlite3.Connection) -> set[str]:
+    """Get all dataset IDs currently in the database.
+
+    Used for pre/post snapshot comparison during change detection.
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+
+    Returns:
+        Set of all dataset ID strings.
+    """
+    rows = conn.execute("SELECT id FROM datasets").fetchall()
+    return {row["id"] for row in rows}
+
+
+def get_columns_snapshot(conn: sqlite3.Connection) -> dict[str, set[str]]:
+    """Get column names grouped by dataset_id.
+
+    Builds a mapping from each dataset_id to the set of its column name
+    strings. Datasets with no columns will not appear in the dict (treat
+    a missing key as an empty set during comparison).
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+
+    Returns:
+        Dict mapping dataset_id to set of column name strings.
+    """
+    rows = conn.execute("SELECT dataset_id, name FROM columns").fetchall()
+    result: dict[str, set[str]] = {}
+    for row in rows:
+        ds_id = row["dataset_id"]
+        if ds_id not in result:
+            result[ds_id] = set()
+        result[ds_id].add(row["name"])
+    return result
+
+
+def insert_change(
+    conn: sqlite3.Connection,
+    dataset_id: str,
+    change_type: str,
+    details: str | None = None,
+    detected_at: str | None = None,
+) -> None:
+    """Insert a change record into the changes table.
+
+    Does NOT commit -- the caller batches inserts and commits once.
+
+    Args:
+        conn: An open sqlite3.Connection (caller manages lifecycle).
+        dataset_id: The dataset ID this change applies to.
+        change_type: One of 'added', 'removed', 'schema_changed'.
+        details: Optional JSON string with change details.
+        detected_at: Optional timestamp string. If provided, overrides the
+            DEFAULT so all changes from one pull share the same timestamp.
+    """
+    if detected_at is not None:
+        conn.execute(
+            "INSERT INTO changes (dataset_id, change_type, details, detected_at) "
+            "VALUES (?, ?, ?, ?)",
+            (dataset_id, change_type, details, detected_at),
+        )
+    else:
+        conn.execute(
+            "INSERT INTO changes (dataset_id, change_type, details) VALUES (?, ?, ?)",
+            (dataset_id, change_type, details),
+        )
+
+
+def get_recent_changes(
+    conn: sqlite3.Connection, limit: int | None = None
+) -> list[dict]:
+    """Get change records joined with dataset titles, most recent first.
+
+    Uses LEFT JOIN from changes to datasets so that removed datasets
+    (which may still have a row) are included. Results are ordered by
+    detected_at DESC, then change_type and dataset_id for deterministic output.
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+        limit: Optional maximum number of records to return.
+
+    Returns:
+        List of dicts with keys: id, dataset_id, change_type, details,
+        detected_at, title.
+    """
+    query = """
+        SELECT c.id, c.dataset_id, c.change_type, c.details, c.detected_at,
+               d.title
+        FROM changes c
+        LEFT JOIN datasets d ON c.dataset_id = d.id
+        ORDER BY c.detected_at DESC, c.change_type, c.dataset_id
+    """
+    if limit:
+        query += f" LIMIT {limit}"
+
+    rows = conn.execute(query).fetchall()
+    return [dict(row) for row in rows]
+
+
 def get_all_datasets_for_audit(conn: sqlite3.Connection) -> list[dict]:
     """Get all datasets with enrichment and column metadata for audit scoring.
 
