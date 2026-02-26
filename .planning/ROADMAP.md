@@ -143,6 +143,6 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 | 2. Data Ingestion | 3/3 | Complete | 2026-02-25 |
 | 3. AI Enrichment | 2/2 | Complete | 2026-02-25 |
 | 4. Quality Audit | 2/2 | Complete | 2026-02-26 |
-| 5. Change Detection | 2/2 | Complete | 2026-02-26 |
+| 5. Change Detection | 2/2 | Complete    | 2026-02-26 |
 | 6. Static Site | 0/TBD | Not started | - |
 | 7. Deployment | 0/TBD | Not started | - |
