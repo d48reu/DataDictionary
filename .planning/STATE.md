@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 6 of 7 (Static Site)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In Progress
-Last activity: 2026-02-26 -- Completed 06-02-PLAN.md (homepage & search)
+Last activity: 2026-02-26 -- Completed 06-03-PLAN.md (dataset detail & browse pages)
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 2.6min
-- Total execution time: 0.57 hours
+- Total plans completed: 14
+- Average duration: 2.7min
+- Total execution time: 0.65 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [█████████░] 87%
 | 3. AI Enrichment | 2 | 5min | 2.5min |
 | 4. Quality Audit | 2 | 5min | 2.5min |
 | 5. Change Detection | 2 | 4min | 2min |
-| 6. Static Site | 2 | 8min | 4min |
+| 6. Static Site | 3 | 13min | 4.3min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (2min), 05-02 (2min), 06-01 (4min), 06-02 (4min)
+- Last 5 plans: 05-02 (2min), 06-01 (4min), 06-02 (4min), 06-03 (5min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -50,6 +50,7 @@ Progress: [█████████░] 87%
 | Phase 05 P02 | 2min | 2 tasks | 1 files |
 | Phase 06 P01 | 4min | 2 tasks | 14 files |
 | Phase 06 P02 | 4min | 2 tasks | 6 files |
+| Phase 06 P03 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,10 @@ Recent decisions affecting current work:
 - [06-02]: Lunr.js CDN (jsdelivr v2.3.9) loaded globally; field boosts title(10) > keywords(8) > description(5) > dept/cat(3)
 - [06-02]: Wildcard suffix on search queries for as-you-type; try-catch fallback for Lunr syntax errors
 - [06-02]: Homepage category grid caps at 15 categories; recently updated section conditionally rendered
+- [06-03]: Dataset detail page uses 7-section layout: breadcrumbs, AI description, use cases, metadata table, columns, related datasets, quality breakdown
+- [06-03]: Browse pages use data attributes (data-format, data-publisher, data-tags) for zero-dependency client-side filtering
+- [06-03]: Dataset pages at /dataset/{slug}/index.html, browse pages at /browse/{slug}/index.html for clean URLs
+- [06-03]: Context pipeline extended with category_slug, tags_text, and audit dict for template consumption
 
 ### Pending Todos
 
@@ -118,5 +123,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 06-02-PLAN.md (homepage & search)
+Stopped at: Completed 06-03-PLAN.md (dataset detail & browse pages)
 Resume file: None

@@ -48,11 +48,11 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Static Site
 
 - [x] **SITE-01**: Full-text search via Lunr.js or Fuse.js with JSON index built at export time
-- [ ] **SITE-02**: Category/theme browse pages with dataset listings
-- [ ] **SITE-03**: Individual dataset pages showing metadata, AI enrichment, columns, quality score, source link
-- [ ] **SITE-04**: Related datasets shown on each dataset page (tag/category overlap)
-- [ ] **SITE-05**: Freshness indicators on dataset listings and detail pages
-- [ ] **SITE-06**: Filtering by format, publisher, and tag on browse pages
+- [x] **SITE-02**: Category/theme browse pages with dataset listings
+- [x] **SITE-03**: Individual dataset pages showing metadata, AI enrichment, columns, quality score, source link
+- [x] **SITE-04**: Related datasets shown on each dataset page (tag/category overlap)
+- [x] **SITE-05**: Freshness indicators on dataset listings and detail pages
+- [x] **SITE-06**: Filtering by format, publisher, and tag on browse pages
 - [ ] **SITE-07**: "What Changed" page showing diff results between pulls
 - [ ] **SITE-08**: Data quality report page with aggregate stats (% described, stale count, etc.)
 - [ ] **SITE-09**: About/disclaimer page with methodology
@@ -154,11 +154,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DIFF-04 | Phase 5 | Complete |
 | DIFF-05 | Phase 5 | Complete |
 | SITE-01 | Phase 6 | Complete |
-| SITE-02 | Phase 6 | Pending |
-| SITE-03 | Phase 6 | Pending |
-| SITE-04 | Phase 6 | Pending |
-| SITE-05 | Phase 6 | Pending |
-| SITE-06 | Phase 6 | Pending |
+| SITE-02 | Phase 6 | Complete |
+| SITE-03 | Phase 6 | Complete |
+| SITE-04 | Phase 6 | Complete |
+| SITE-05 | Phase 6 | Complete |
+| SITE-06 | Phase 6 | Complete |
 | SITE-07 | Phase 6 | Pending |
 | SITE-08 | Phase 6 | Pending |
 | SITE-09 | Phase 6 | Pending |
