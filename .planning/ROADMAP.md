@@ -114,7 +114,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Site generator foundation: context queries, generator orchestrator, base template, CSS system, CLI export/serve commands
+- [x] 06-01-PLAN.md — Site generator foundation: context queries, generator orchestrator, base template, CSS system, CLI export/serve commands
 - [ ] 06-02-PLAN.md — Homepage and full-text search: Lunr.js index generation, instant search dropdown, stat cards, category links
 - [ ] 06-03-PLAN.md — Dataset detail pages and category browse: metadata display, related datasets, freshness indicators, client-side filtering
 - [ ] 06-04-PLAN.md — Report pages: What Changed, Data Quality report, About/disclaimer

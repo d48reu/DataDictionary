@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 5: Change Detection (Complete)
+**Current focus:** Phase 6: Static Site (In Progress)
 
 ## Current Position
 
-Phase: 5 of 7 (Change Detection) -- COMPLETE
-Plan: 2 of 2 in current phase (phase complete)
-Status: Phase Complete
-Last activity: 2026-02-26 -- Completed 05-02-PLAN.md (pull integration and diff display)
+Phase: 6 of 7 (Static Site)
+Plan: 1 of 4 in current phase
+Status: In Progress
+Last activity: 2026-02-26 -- Completed 06-01-PLAN.md (site generator foundation)
 
-Progress: [████████░░] 79%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 2.4min
-- Total execution time: 0.43 hours
+- Total plans completed: 12
+- Average duration: 2.5min
+- Total execution time: 0.50 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [████████░░] 79%
 | 3. AI Enrichment | 2 | 5min | 2.5min |
 | 4. Quality Audit | 2 | 5min | 2.5min |
 | 5. Change Detection | 2 | 4min | 2min |
+| 6. Static Site | 1 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (3min), 04-02 (2min), 05-01 (2min), 05-02 (2min)
+- Last 5 plans: 04-02 (2min), 05-01 (2min), 05-02 (2min), 06-01 (4min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -47,6 +48,7 @@ Progress: [████████░░] 79%
 | Phase 04 P02 | 2min | 2 tasks | 1 files |
 | Phase 05 P01 | 2min | 2 tasks | 3 files |
 | Phase 05 P02 | 2min | 2 tasks | 1 files |
+| Phase 06 P01 | 4min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -93,6 +95,10 @@ Recent decisions affecting current work:
 - [05-02]: Default diff is --latest (most recent pull only) for day-to-day usability
 - [05-02]: Removed dataset title resolved from details JSON first, then LEFT JOIN, then dataset_id fallback
 - [05-02]: Hint about --all shown only when more batches exist beyond the displayed one
+- [06-01]: Used python-slugify for URL slug generation with collision detection via dataset ID suffix
+- [06-01]: Pure CSS hamburger menu (checkbox hack) to avoid JavaScript dependency for navigation
+- [06-01]: Related datasets scored by category match (3 pts) plus shared keywords (1 pt each)
+- [06-01]: Added force-include in pyproject.toml to ensure templates and static files ship in wheel
 
 ### Pending Todos
 
@@ -108,5 +114,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 05-02-PLAN.md (pull integration and diff display -- Phase 5 complete)
+Stopped at: Completed 06-01-PLAN.md (site generator foundation)
 Resume file: None

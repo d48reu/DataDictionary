@@ -56,10 +56,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SITE-07**: "What Changed" page showing diff results between pulls
 - [ ] **SITE-08**: Data quality report page with aggregate stats (% described, stale count, etc.)
 - [ ] **SITE-09**: About/disclaimer page with methodology
-- [ ] **SITE-10**: Footer on every page: "Not an official Miami-Dade County product. Built by Abreu Data Works LLC."
-- [ ] **SITE-11**: MDC blue (#003366), white, amber color scheme
-- [ ] **SITE-12**: Responsive layout that works on mobile
-- [ ] **SITE-13**: Pure static files — works without a server
+- [x] **SITE-10**: Footer on every page: "Not an official Miami-Dade County product. Built by Abreu Data Works LLC."
+- [x] **SITE-11**: MDC blue (#003366), white, amber color scheme
+- [x] **SITE-12**: Responsive layout that works on mobile
+- [x] **SITE-13**: Pure static files — works without a server
 
 ### CLI & Packaging
 
@@ -70,8 +70,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CLI-05**: `enrich` command runs AI enrichment pipeline
 - [x] **CLI-06**: `audit` command runs quality audit
 - [x] **CLI-07**: `diff` command shows changes between pulls
-- [ ] **CLI-08**: `export` command generates static site in site/ directory
-- [ ] **CLI-09**: `serve` command starts local preview server for the static site
+- [x] **CLI-08**: `export` command generates static site in site/ directory
+- [x] **CLI-09**: `serve` command starts local preview server for the static site
 - [x] **CLI-10**: Rich terminal output for all commands (progress bars, tables, colored status)
 
 ### Deployment
@@ -162,10 +162,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SITE-07 | Phase 6 | Pending |
 | SITE-08 | Phase 6 | Pending |
 | SITE-09 | Phase 6 | Pending |
-| SITE-10 | Phase 6 | Pending |
-| SITE-11 | Phase 6 | Pending |
-| SITE-12 | Phase 6 | Pending |
-| SITE-13 | Phase 6 | Pending |
+| SITE-10 | Phase 6 | Complete |
+| SITE-11 | Phase 6 | Complete |
+| SITE-12 | Phase 6 | Complete |
+| SITE-13 | Phase 6 | Complete |
 | CLI-01 | Phase 1 | Complete |
 | CLI-02 | Phase 1 | Complete |
 | CLI-03 | Phase 2 | Complete |
@@ -173,8 +173,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-05 | Phase 3 | Complete |
 | CLI-06 | Phase 4 | Complete |
 | CLI-07 | Phase 5 | Complete |
-| CLI-08 | Phase 6 | Pending |
-| CLI-09 | Phase 6 | Pending |
+| CLI-08 | Phase 6 | Complete |
+| CLI-09 | Phase 6 | Complete |
 | CLI-10 | Phase 1 | Complete |
 | DEPLOY-01 | Phase 7 | Pending |
 | DEPLOY-02 | Phase 7 | Pending |
