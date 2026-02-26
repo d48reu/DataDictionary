@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 6 of 7 (Static Site)
-Plan: 4 of 4 in current phase
+Plan: 5 of 5 in current phase
 Status: Phase Complete
-Last activity: 2026-02-26 -- Completed 06-04-PLAN.md (report/informational pages)
+Last activity: 2026-02-26 -- Completed 06-05-PLAN.md (URL bug fixes / gap closure)
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 2.8min
 - Total execution time: 0.77 hours
 
@@ -32,10 +32,10 @@ Progress: [██████████] 100%
 | 3. AI Enrichment | 2 | 5min | 2.5min |
 | 4. Quality Audit | 2 | 5min | 2.5min |
 | 5. Change Detection | 2 | 4min | 2min |
-| 6. Static Site | 4 | 20min | 5min |
+| 6. Static Site | 5 | 21min | 4.2min |
 
 **Recent Trend:**
-- Last 5 plans: 06-01 (4min), 06-02 (4min), 06-03 (5min), 06-04 (7min)
+- Last 5 plans: 06-01 (4min), 06-02 (4min), 06-03 (5min), 06-04 (7min), 06-05 (1min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -52,6 +52,7 @@ Progress: [██████████] 100%
 | Phase 06 P02 | 4min | 2 tasks | 6 files |
 | Phase 06 P03 | 5min | 2 tasks | 6 files |
 | Phase 06 P04 | 7min | 2 tasks | 6 files |
+| Phase 06 P05 | 1min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,8 @@ Recent decisions affecting current work:
 - [06-04]: Disclaimer box uses red border and background for maximum visual prominence
 - [06-04]: Grade distribution uses CSS-only horizontal bars (width proportional to percentage)
 - [06-04]: Below-threshold dimension counts use 0.5 cutoff; stale datasets use 0.4 freshness cutoff
+- [06-05]: Used python-slugify as Jinja2 filter to match generator slug logic exactly in templates
+- [06-05]: Directory URLs (/dataset/{slug}/) instead of file URLs (/dataset/{slug}.html) for search results
 
 ### Pending Todos
 
@@ -128,5 +131,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 06-04-PLAN.md (report/informational pages)
+Stopped at: Completed 06-05-PLAN.md (URL bug fixes / gap closure)
 Resume file: None
