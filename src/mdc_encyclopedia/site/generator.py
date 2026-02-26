@@ -159,11 +159,19 @@ def _render_homepage(env, site_data, output_dir):
         site_data: Complete site data dict from build_site_data.
         output_dir: Root output directory.
     """
+    # Build recent datasets list: top 5 by updated_at descending
+    datasets_with_dates = [
+        ds for ds in site_data["datasets"] if ds.get("updated_at")
+    ]
+    datasets_with_dates.sort(key=lambda d: d.get("updated_at", ""), reverse=True)
+    recent_datasets = datasets_with_dates[:5]
+
     context = {
         "page_title": "MDC Data Encyclopedia",
         "datasets": site_data["datasets"],
         "categories": site_data["categories"],
         "stats": site_data["stats"],
+        "recent_datasets": recent_datasets,
         "generated_at": site_data["generated_at"],
     }
     _render_page(env, "index.html", context, os.path.join(output_dir, "index.html"))

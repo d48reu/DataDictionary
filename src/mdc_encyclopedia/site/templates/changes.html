@@ -4,5 +4,102 @@
 
 {% block content %}
 <h1>What Changed</h1>
-<p>Recent changes to the Miami-Dade open data catalog.</p>
+<p class="text-muted">Changes detected in the most recent catalog pull{% if changes.detected_at %} on {{ changes.detected_at }}{% endif %}.</p>
+
+{% if changes.added or changes.removed or changes.schema %}
+<div class="stat-cards">
+    <div class="stat-card">
+        <span class="stat-number" style="color: #2e7d32;">{{ changes.total_added }}</span>
+        <span class="stat-label">New Datasets</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number" style="color: #c62828;">{{ changes.total_removed }}</span>
+        <span class="stat-label">Removed Datasets</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number" style="color: #d4a017;">{{ changes.total_schema }}</span>
+        <span class="stat-label">Schema Changes</span>
+    </div>
+</div>
+
+{% if changes.added %}
+<section class="changes-section mt-3">
+    <h2>New Datasets</h2>
+    <div class="changes-list">
+        {% for ds in changes.added %}
+        <div class="dataset-row">
+            <div class="dataset-info">
+                <div class="dataset-title">
+                    {% if ds.slug %}
+                    <a href="/dataset/{{ ds.slug }}/">{{ ds.title or ds.dataset_id }}</a>
+                    {% else %}
+                    {{ ds.title or ds.dataset_id }}
+                    {% endif %}
+                </div>
+                <div class="dataset-meta">
+                    {% if ds.source_portal %}<span>{{ ds.source_portal }}</span>{% endif %}
+                    {% if ds.category %}<span class="chip">{{ ds.category }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if changes.removed %}
+<section class="changes-section mt-3">
+    <h2>Removed Datasets</h2>
+    <div class="changes-list">
+        {% for ds in changes.removed %}
+        <div class="dataset-row">
+            <div class="dataset-info">
+                <div class="dataset-title">{{ ds.title or ds.dataset_id }}</div>
+                <div class="dataset-meta">
+                    {% if ds.details_parsed %}
+                    <span class="text-muted">{{ ds.details_parsed }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if changes.schema %}
+<section class="changes-section mt-3">
+    <h2>Schema Changes</h2>
+    <div class="changes-list">
+        {% for ds in changes.schema %}
+        <div class="dataset-row">
+            <div class="dataset-info">
+                <div class="dataset-title">
+                    {% if ds.slug %}
+                    <a href="/dataset/{{ ds.slug }}/">{{ ds.title or ds.dataset_id }}</a>
+                    {% else %}
+                    {{ ds.title or ds.dataset_id }}
+                    {% endif %}
+                </div>
+                <div class="dataset-meta">
+                    {% if ds.change_description %}
+                    <span>{{ ds.change_description }}</span>
+                    {% else %}
+                    <span>Schema modified</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% else %}
+<div class="empty-state mt-3">
+    <p class="text-muted text-center">No changes detected between the most recent pulls. The catalog is stable.</p>
+</div>
+{% endif %}
+
+<p class="text-muted mt-3" style="font-size: 0.85rem;">Showing changes from the most recent pull only. Run <code>mdc-encyclopedia diff --all</code> for full history.</p>
 {% endblock %}

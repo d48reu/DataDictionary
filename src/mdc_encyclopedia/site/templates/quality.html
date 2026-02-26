@@ -3,6 +3,106 @@
 {% block title %}Data Quality - MDC Data Encyclopedia{% endblock %}
 
 {% block content %}
+{% if quality %}
 <h1>Data Quality Report</h1>
-<p>Quality scores and findings across the catalog.</p>
+<p class="text-muted">Quality assessment of {{ quality.total_datasets }} Miami-Dade County datasets. Generated {{ generated_at }}.</p>
+
+<div class="stat-cards">
+    <div class="stat-card">
+        <span class="stat-number">{{ quality.total_datasets }}</span>
+        <span class="stat-label">Total Datasets</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ quality.avg_grade }} ({{ quality.avg_score }}%)</span>
+        <span class="stat-label">Average Quality Score</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ quality.pct_described }}%</span>
+        <span class="stat-label">Fully Described</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number" {% if quality.stale_count > 0 %}style="color: #c62828;"{% endif %}>{{ quality.stale_count }}</span>
+        <span class="stat-label">Stale Datasets</span>
+    </div>
+</div>
+
+{% if quality.grade_distribution %}
+<section class="mt-3">
+    <h2>Grade Distribution</h2>
+    <div class="grade-chart mt-2">
+        {% for grade in ["A", "B", "C", "D", "F"] %}
+        {% set count = quality.grade_distribution.get(grade, 0) %}
+        {% set pct = (count / quality.total_datasets * 100) | round(1) if quality.total_datasets > 0 else 0 %}
+        <div class="grade-bar-row">
+            <span class="grade grade-{{ grade | lower }}">{{ grade }}</span>
+            <div class="grade-bar-track">
+                <div class="grade-bar-fill grade-bar-{{ grade | lower }}" style="width: {{ pct }}%;"></div>
+            </div>
+            <span class="grade-bar-label">{{ count }} ({{ pct }}%)</span>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if quality.top_findings %}
+<section class="mt-3">
+    <h2>Top Findings</h2>
+    <div class="findings-list mt-2">
+        {% for finding, count in quality.top_findings %}
+        <div class="finding-row">
+            <span class="finding-text">{{ finding }}</span>
+            <span class="chip">{{ count }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if quality.dimension_averages %}
+<section class="mt-3">
+    <h2>Dimension Breakdown</h2>
+
+    <div class="dimension-cards mt-2">
+        <div class="dimension-card">
+            <h3>Freshness</h3>
+            <p class="dimension-score">{{ (quality.dimension_averages.freshness * 100) | round(0) | int }}%</p>
+            <p class="text-muted">Measures how recently datasets were updated relative to their expected update frequency. Datasets with stale data score lower.</p>
+            {% if quality.below_threshold_freshness is defined %}
+            <p class="text-muted" style="font-size: 0.85rem;">{{ quality.below_threshold_freshness }} datasets below threshold</p>
+            {% endif %}
+        </div>
+
+        <div class="dimension-card">
+            <h3>Completeness</h3>
+            <p class="dimension-score">{{ (quality.dimension_averages.completeness * 100) | round(0) | int }}%</p>
+            <p class="text-muted">Measures whether datasets have row counts, column definitions, and documented fields. Missing metadata lowers the score.</p>
+            {% if quality.below_threshold_completeness is defined %}
+            <p class="text-muted" style="font-size: 0.85rem;">{{ quality.below_threshold_completeness }} datasets below threshold</p>
+            {% endif %}
+        </div>
+
+        <div class="dimension-card">
+            <h3>Documentation</h3>
+            <p class="dimension-score">{{ (quality.dimension_averages.documentation * 100) | round(0) | int }}%</p>
+            <p class="text-muted">Measures the quality and presence of dataset descriptions, tags, and publisher information. Undocumented datasets score lower.</p>
+            {% if quality.below_threshold_documentation is defined %}
+            <p class="text-muted" style="font-size: 0.85rem;">{{ quality.below_threshold_documentation }} datasets below threshold</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="mt-3 methodology-note">
+    <h2>Methodology</h2>
+    <p>Quality scores combine freshness (50%), completeness (30%), and documentation (20%). Grades: A (90-100), B (80-89), C (70-79), D (60-69), F (below 60).</p>
+</section>
+
+{% else %}
+<h1>Data Quality Report</h1>
+<div class="empty-state mt-3">
+    <p class="text-muted text-center">No quality audit data available. Run <code>mdc-encyclopedia audit</code> first.</p>
+</div>
+{% endif %}
 {% endblock %}

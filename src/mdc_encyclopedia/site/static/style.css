@@ -570,6 +570,489 @@ a:hover {
     white-space: nowrap;
 }
 
+/* ===== Breadcrumbs ===== */
+.breadcrumbs {
+    font-size: 0.85rem;
+    color: var(--mdc-dark-gray);
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+}
+
+.breadcrumbs a {
+    color: var(--mdc-blue);
+}
+
+.breadcrumbs span {
+    color: var(--mdc-text);
+    font-weight: 500;
+}
+
+/* ===== Dataset Detail Header ===== */
+.dataset-header h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.dataset-header h1 .grade {
+    flex-shrink: 0;
+}
+
+/* ===== Dataset Sections ===== */
+.dataset-section {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.dataset-section h2 {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--mdc-light-gray);
+}
+
+.ai-description {
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.use-cases-list {
+    list-style: disc;
+    padding-left: 1.5rem;
+}
+
+.use-cases-list li {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+/* ===== Metadata Table ===== */
+.metadata-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.metadata-table th,
+.metadata-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--mdc-light-gray);
+    vertical-align: top;
+}
+
+.metadata-table th {
+    width: 160px;
+    font-weight: 600;
+    color: var(--mdc-dark-gray);
+    font-size: 0.9rem;
+}
+
+.metadata-table td {
+    font-size: 0.95rem;
+}
+
+.keyword-chip {
+    margin: 0.15rem 0.25rem 0.15rem 0;
+}
+
+/* ===== Columns Table ===== */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.columns-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.columns-table th,
+.columns-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--mdc-light-gray);
+}
+
+.columns-table th {
+    background: var(--mdc-bg);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--mdc-dark-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.columns-table code {
+    background: var(--mdc-bg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    color: var(--mdc-blue);
+}
+
+/* ===== Related Datasets ===== */
+.related-datasets .dataset-row:last-child {
+    border-bottom: none;
+}
+
+/* ===== Quality Breakdown ===== */
+.quality-overall {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.quality-score {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--mdc-dark-gray);
+}
+
+.quality-dimensions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.quality-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.quality-bar label {
+    width: 120px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--mdc-dark-gray);
+    flex-shrink: 0;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 12px;
+    background: var(--mdc-light-gray);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--mdc-blue);
+    border-radius: 6px;
+    transition: width 0.3s;
+}
+
+.score-label {
+    width: 40px;
+    text-align: right;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--mdc-dark-gray);
+}
+
+.quality-findings ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+}
+
+.quality-findings li {
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+}
+
+/* ===== Civic Relevance Labels ===== */
+.relevance {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.relevance-high {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.relevance-medium {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.relevance-low {
+    background: var(--mdc-light-gray);
+    color: var(--mdc-dark-gray);
+}
+
+/* ===== Browse Page ===== */
+.browse-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.browse-count {
+    font-size: 1rem;
+    color: var(--mdc-dark-gray);
+    font-weight: 400;
+}
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    background: var(--mdc-blue);
+    color: var(--mdc-white);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.filter-chip-remove {
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.filter-chip-remove:hover {
+    opacity: 1;
+}
+
+.filter-bar .clear-btn {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: var(--mdc-radius);
+    font-size: 0.85rem;
+    background: var(--mdc-white);
+    cursor: pointer;
+    color: var(--mdc-dark-gray);
+}
+
+.filter-bar .clear-btn:hover {
+    background: var(--mdc-light-gray);
+}
+
+.result-count {
+    font-size: 0.9rem;
+    color: var(--mdc-dark-gray);
+    font-weight: 500;
+}
+
+.dataset-desc {
+    font-size: 0.85rem;
+    color: var(--mdc-dark-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
+}
+
+.dataset-freshness {
+    font-size: 0.8rem;
+    color: var(--mdc-dark-gray);
+    white-space: nowrap;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--mdc-dark-gray);
+}
+
+/* ===== Quality Report: Grade Distribution Bars ===== */
+.grade-chart {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    padding: 1.25rem;
+}
+
+.grade-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.grade-bar-row:last-child {
+    margin-bottom: 0;
+}
+
+.grade-bar-row .grade {
+    flex-shrink: 0;
+}
+
+.grade-bar-track {
+    flex: 1;
+    height: 20px;
+    background: var(--mdc-light-gray);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.grade-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    min-width: 2px;
+    transition: width 0.3s;
+}
+
+.grade-bar-a { background: #2e7d32; }
+.grade-bar-b { background: #558b2f; }
+.grade-bar-c { background: #f9a825; }
+.grade-bar-d { background: #e65100; }
+.grade-bar-f { background: #c62828; }
+
+.grade-bar-label {
+    width: 100px;
+    text-align: right;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--mdc-dark-gray);
+    flex-shrink: 0;
+}
+
+/* ===== Quality Report: Findings List ===== */
+.findings-list {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    padding: 1rem;
+}
+
+.finding-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.5rem;
+    border-bottom: 1px solid var(--mdc-light-gray);
+}
+
+.finding-row:last-child {
+    border-bottom: none;
+}
+
+.finding-text {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+/* ===== Quality Report: Dimension Cards ===== */
+.dimension-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.dimension-card {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    padding: 1.25rem;
+}
+
+.dimension-card h3 {
+    color: var(--mdc-blue);
+    margin-bottom: 0.5rem;
+}
+
+.dimension-score {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--mdc-blue);
+    margin-bottom: 0.5rem;
+}
+
+/* ===== Quality Report: Methodology Note ===== */
+.methodology-note {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    padding: 1.25rem;
+}
+
+/* ===== About Page: Disclaimer Box ===== */
+.disclaimer-box {
+    border: 2px solid #c62828;
+    border-radius: var(--mdc-radius);
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    background: #fff5f5;
+}
+
+.disclaimer-box h2 {
+    color: #c62828;
+    margin-bottom: 0.75rem;
+}
+
+.disclaimer-box p {
+    margin-bottom: 0.5rem;
+}
+
+.disclaimer-box p:last-child {
+    margin-bottom: 0;
+}
+
+/* ===== About Page: Section Styles ===== */
+.about-section {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.about-section h2 {
+    margin-bottom: 0.75rem;
+}
+
+.pipeline-steps {
+    list-style: none;
+    padding: 0;
+}
+
+.pipeline-steps li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--mdc-light-gray);
+}
+
+.pipeline-steps li:last-child {
+    border-bottom: none;
+}
+
+.pipeline-steps strong {
+    color: var(--mdc-blue);
+}
+
+.credits-list {
+    list-style: disc;
+    padding-left: 1.5rem;
+}
+
+.credits-list li {
+    margin-bottom: 0.5rem;
+}
+
+/* ===== Changes Page: Section Styles ===== */
+.changes-section h2 {
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--mdc-light-gray);
+}
+
 /* ===== Utility Classes ===== */
 .text-muted {
     color: var(--mdc-dark-gray);

@@ -1,8 +1,235 @@
 {% extends "base.html" %}
 
-{% block title %}{{ page_title }} - MDC Data Encyclopedia{% endblock %}
+{% block title %}{{ dataset.title }} - MDC Data Encyclopedia{% endblock %}
 
 {% block content %}
-<h1>{{ page_title }}</h1>
-<p>Dataset detail page.</p>
+<!-- Breadcrumbs -->
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a> &rsaquo;
+    <a href="/browse/">Browse</a> &rsaquo;
+    {% if dataset.category %}
+    <a href="/browse/{{ dataset.category_slug }}/">{{ dataset.category }}</a> &rsaquo;
+    {% endif %}
+    <span>{{ dataset.title }}</span>
+</nav>
+
+<!-- Header: Title + Grade Badge -->
+<div class="dataset-header">
+    <h1>
+        {{ dataset.title }}
+        {% if dataset.letter_grade %}
+        <span class="grade {{ dataset.grade_css }}" title="Quality Grade: {{ dataset.letter_grade }}">{{ dataset.letter_grade }}</span>
+        {% endif %}
+    </h1>
+</div>
+
+<!-- AI Description -->
+<section class="dataset-section">
+    <h2>About This Dataset</h2>
+    {% if dataset.ai_description %}
+    <p class="ai-description">{{ dataset.ai_description }}</p>
+    {% else %}
+    <p class="text-muted">This dataset has not yet been AI-described.</p>
+    {% endif %}
+</section>
+
+<!-- Use Cases: Why This Matters -->
+{% if dataset.use_cases_list %}
+<section class="dataset-section">
+    <h2>Why This Matters</h2>
+    <ul class="use-cases-list">
+        {% for use_case in dataset.use_cases_list %}
+        <li>{{ use_case }}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+<!-- Key Metadata Table -->
+<section class="dataset-section">
+    <h2>Key Metadata</h2>
+    <table class="metadata-table">
+        <tbody>
+            <tr>
+                <th>Publisher</th>
+                <td>{{ dataset.publisher|default('N/A') }}</td>
+            </tr>
+            <tr>
+                <th>Department</th>
+                <td>
+                    {% if dataset.department %}
+                    <span class="chip">{{ dataset.department }}</span>
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Category</th>
+                <td>
+                    {% if dataset.category %}
+                    <a href="/browse/{{ dataset.category_slug }}/">{{ dataset.category }}</a>
+                    {% else %}
+                    Uncategorized
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Format</th>
+                <td>{{ dataset.format|default('N/A') }}</td>
+            </tr>
+            <tr>
+                <th>Last Updated</th>
+                <td>
+                    <span class="freshness-dot {{ dataset.staleness_color }}"></span>
+                    {{ dataset.relative_time }}
+                </td>
+            </tr>
+            <tr>
+                <th>Rows</th>
+                <td>{{ dataset.row_count|default('N/A') }}</td>
+            </tr>
+            <tr>
+                <th>Civic Relevance</th>
+                <td>
+                    {% if dataset.civic_relevance %}
+                    <span class="relevance relevance-{{ dataset.civic_relevance|lower }}">{{ dataset.civic_relevance }}</span>
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Update Frequency</th>
+                <td>{{ dataset.update_freq|default('Unknown') }}</td>
+            </tr>
+            <tr>
+                <th>Source</th>
+                <td>
+                    {% if dataset.source_url %}
+                    <a href="{{ dataset.source_url }}" target="_blank" rel="noopener">View on Open Data Portal</a>
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
+            </tr>
+            {% if dataset.keywords_list %}
+            <tr>
+                <th>Keywords</th>
+                <td>
+                    {% for keyword in dataset.keywords_list %}
+                    <span class="chip keyword-chip">{{ keyword }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+
+<!-- Columns/Fields Table -->
+<section class="dataset-section">
+    <h2>Columns / Fields</h2>
+    {% if dataset.columns %}
+    <div class="table-responsive">
+        <table class="columns-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col in dataset.columns %}
+                <tr>
+                    <td><code>{{ col.name }}</code></td>
+                    <td>{{ col.data_type|default('--') }}</td>
+                    <td>{{ col.description|default('--') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Column metadata not available.</p>
+    {% endif %}
+</section>
+
+<!-- Related Datasets -->
+<section class="dataset-section">
+    <h2>Related Datasets</h2>
+    {% if dataset.related %}
+    <div class="related-datasets">
+        {% for rel in dataset.related %}
+        <div class="dataset-row">
+            <div class="dataset-grade">
+                <span class="grade {{ rel.grade_class }}" title="Grade: {{ rel.grade|default('N/A') }}">{{ rel.grade|default('?') }}</span>
+            </div>
+            <div class="dataset-info">
+                <div class="dataset-title">
+                    <a href="/dataset/{{ rel.slug }}/">{{ rel.title }}</a>
+                </div>
+                <div class="dataset-meta">
+                    {% if rel.department %}
+                    <span class="chip">{{ rel.department }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No related datasets found.</p>
+    {% endif %}
+</section>
+
+<!-- Quality Breakdown -->
+{% if dataset.audit %}
+<section class="dataset-section">
+    <h2>Quality Breakdown</h2>
+    <div class="quality-breakdown">
+        <div class="quality-overall">
+            <span class="grade {{ dataset.grade_css }}">{{ dataset.letter_grade }}</span>
+            <span class="quality-score">Composite Score: {{ "%.0f"|format(dataset.audit.composite_score * 100) }}%</span>
+        </div>
+
+        <div class="quality-dimensions">
+            <div class="quality-bar">
+                <label>Freshness</label>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (dataset.audit.freshness_score or 0) * 100 }}%"></div>
+                </div>
+                <span class="score-label">{{ "%.0f"|format((dataset.audit.freshness_score or 0) * 100) }}%</span>
+            </div>
+            <div class="quality-bar">
+                <label>Completeness</label>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (dataset.audit.completeness_score or 0) * 100 }}%"></div>
+                </div>
+                <span class="score-label">{{ "%.0f"|format((dataset.audit.completeness_score or 0) * 100) }}%</span>
+            </div>
+            <div class="quality-bar">
+                <label>Documentation</label>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (dataset.audit.documentation_score or 0) * 100 }}%"></div>
+                </div>
+                <span class="score-label">{{ "%.0f"|format((dataset.audit.documentation_score or 0) * 100) }}%</span>
+            </div>
+        </div>
+
+        {% if dataset.audit.findings %}
+        <div class="quality-findings mt-2">
+            <h3>Findings</h3>
+            <ul>
+                {% for finding in dataset.audit.findings %}
+                <li>{{ finding }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 {% endblock %}

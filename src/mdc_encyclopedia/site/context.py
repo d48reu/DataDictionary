@@ -129,7 +129,9 @@ def build_site_data(conn) -> dict:
     ).fetchall()
     changes = [dict(r) for r in change_rows]
 
-    # Quality summary: grade distribution and top findings
+    # Quality summary: grade distribution, findings, dimension averages, counts
+    from collections import Counter
+
     grade_rows = conn.execute(
         "SELECT letter_grade, COUNT(*) as cnt "
         "FROM audit_scores GROUP BY letter_grade ORDER BY letter_grade"
@@ -140,7 +142,6 @@ def build_site_data(conn) -> dict:
     findings_rows = conn.execute(
         "SELECT findings_json FROM audit_scores WHERE findings_json IS NOT NULL"
     ).fetchall()
-    from collections import Counter
 
     findings_counter = Counter()
     for fr in findings_rows:
@@ -152,9 +153,66 @@ def build_site_data(conn) -> dict:
             pass
     top_findings = findings_counter.most_common(10)
 
+    # Dimension averages and below-threshold counts
+    audit_rows = conn.execute(
+        "SELECT composite_score, staleness, completeness, documentation "
+        "FROM audit_scores"
+    ).fetchall()
+    audited_count = len(audit_rows)
+
+    if audited_count > 0:
+        avg_composite = sum(r["composite_score"] or 0 for r in audit_rows) / audited_count
+        avg_score = round(avg_composite * 100)
+        avg_freshness = sum(r["staleness"] or 0 for r in audit_rows) / audited_count
+        avg_completeness = sum(r["completeness"] or 0 for r in audit_rows) / audited_count
+        avg_documentation = sum(r["documentation"] or 0 for r in audit_rows) / audited_count
+
+        # Map score to grade letter
+        if avg_score >= 90:
+            avg_grade = "A"
+        elif avg_score >= 80:
+            avg_grade = "B"
+        elif avg_score >= 70:
+            avg_grade = "C"
+        elif avg_score >= 60:
+            avg_grade = "D"
+        else:
+            avg_grade = "F"
+
+        # Count datasets below 0.5 threshold per dimension
+        below_freshness = sum(1 for r in audit_rows if (r["staleness"] or 0) < 0.5)
+        below_completeness = sum(1 for r in audit_rows if (r["completeness"] or 0) < 0.5)
+        below_documentation = sum(1 for r in audit_rows if (r["documentation"] or 0) < 0.5)
+
+        # Stale datasets: freshness below 0.4
+        stale_count = sum(1 for r in audit_rows if (r["staleness"] or 0) < 0.4)
+    else:
+        avg_score = 0
+        avg_grade = "N/A"
+        avg_freshness = 0
+        avg_completeness = 0
+        avg_documentation = 0
+        below_freshness = 0
+        below_completeness = 0
+        below_documentation = 0
+        stale_count = 0
+
     quality_summary = {
         "grade_distribution": grade_distribution,
         "top_findings": top_findings,
+        "total_datasets": total_datasets,
+        "avg_score": avg_score,
+        "avg_grade": avg_grade,
+        "pct_described": pct_described,
+        "stale_count": stale_count,
+        "dimension_averages": {
+            "freshness": round(avg_freshness, 2),
+            "completeness": round(avg_completeness, 2),
+            "documentation": round(avg_documentation, 2),
+        },
+        "below_threshold_freshness": below_freshness,
+        "below_threshold_completeness": below_completeness,
+        "below_threshold_documentation": below_documentation,
     }
 
     generated_at = now.strftime("%Y-%m-%d %H:%M UTC")
@@ -199,6 +257,26 @@ def _build_dataset_context(row, columns_by_dataset) -> dict:
     # Generate slug from title
     title = ds.get("title") or ds.get("id", "unknown")
     ds["slug"] = slugify(title, max_length=80)
+
+    # Category slug for browse page links
+    cat = ds.get("category") or "Uncategorized"
+    ds["category_slug"] = slugify(cat)
+
+    # Tags as comma-separated text for browse page data attributes
+    ds["tags_text"] = ",".join(ds.get("tags_list", []))
+
+    # Audit dict for quality breakdown section on dataset detail page
+    if ds.get("composite_score") is not None:
+        ds["audit"] = {
+            "freshness_score": ds.get("freshness_score"),
+            "completeness_score": ds.get("completeness"),
+            "documentation_score": ds.get("documentation"),
+            "composite_score": ds.get("composite_score"),
+            "letter_grade": ds.get("letter_grade"),
+            "findings": ds.get("findings_list", []),
+        }
+    else:
+        ds["audit"] = None
 
     # Attach columns
     ds["columns"] = columns_by_dataset.get(ds["id"], [])
@@ -265,6 +343,7 @@ def _build_related_datasets(dataset, all_datasets) -> list:
             "slug": ds["slug"],
             "department": ds.get("department"),
             "grade": ds.get("letter_grade"),
+            "grade_class": _grade_class(ds.get("letter_grade")),
         }
         for _, ds in top5
     ]
