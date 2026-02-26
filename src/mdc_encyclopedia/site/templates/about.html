@@ -3,6 +3,46 @@
 {% block title %}About - MDC Data Encyclopedia{% endblock %}
 
 {% block content %}
-<h1>About</h1>
-<p>About the Miami-Dade County Data Encyclopedia.</p>
+<h1>About the MDC Open Data Encyclopedia</h1>
+
+<div class="about-section">
+    <h2>Mission</h2>
+    <p>The MDC Open Data Encyclopedia makes Miami-Dade County's open data catalog discoverable and understandable by non-technical residents. Every dataset gets an AI-generated plain-English description, quality score, and change tracking so that residents, journalists, researchers, and community organizations can find and evaluate public data without needing technical expertise.</p>
+</div>
+
+<div class="about-section">
+    <h2>How It Works</h2>
+    <ul class="pipeline-steps">
+        <li><strong>Data Collection:</strong> Metadata is pulled from Miami-Dade County's ArcGIS Hub open data portal, capturing dataset titles, descriptions, schemas, and update timestamps.</li>
+        <li><strong>AI Enrichment:</strong> Claude AI (Anthropic) generates plain-English descriptions, potential use cases, keywords, department attribution, and civic relevance scores for each dataset.</li>
+        <li><strong>Quality Audit:</strong> Automated scoring evaluates each dataset across three dimensions: freshness (how recently updated), completeness (whether metadata is filled in), and documentation quality.</li>
+        <li><strong>Change Detection:</strong> Automated comparison between data pulls tracks new, removed, and modified datasets so you can see how the catalog evolves over time.</li>
+        <li><strong>Static Site:</strong> This website is generated from the enriched database and updated weekly to reflect the latest state of the open data catalog.</li>
+    </ul>
+</div>
+
+<div class="disclaimer-box">
+    <h2>Disclaimer</h2>
+    <p><strong>This is NOT an official Miami-Dade County product.</strong></p>
+    <p>This site is an independent civic technology project. It aggregates and presents publicly available metadata from Miami-Dade County's open data portal.</p>
+    <p>AI-generated descriptions are produced by Claude (Anthropic) and may contain inaccuracies. Always verify critical information with the original data source.</p>
+    <p>Quality scores are automated assessments and do not reflect official data quality evaluations.</p>
+</div>
+
+<div class="about-section">
+    <h2>Credits</h2>
+    <ul class="credits-list">
+        <li>Built by <strong>Abreu Data Works LLC</strong></li>
+        <li>Powered by <strong>Claude AI</strong> (Anthropic) for dataset enrichment</li>
+        <li>Data sourced from <a href="https://gis-mdc.opendata.arcgis.com/" rel="noopener">Miami-Dade County Open Data</a> (gis-mdc.opendata.arcgis.com)</li>
+        <li>Source code available on <a href="https://github.com/abreu-data-works/mdc-data-encyclopedia" rel="noopener">GitHub</a></li>
+    </ul>
+</div>
+
+<div class="about-section">
+    <h2>Contact</h2>
+    <p>Feedback, corrections, and feature requests are welcome via <a href="https://github.com/abreu-data-works/mdc-data-encyclopedia/issues" rel="noopener">GitHub Issues</a>.</p>
+</div>
+
+<p class="text-muted" style="font-size: 0.85rem;">Site generated {{ generated_at }}.</p>
 {% endblock %}

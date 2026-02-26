@@ -98,19 +98,14 @@ def build_site_data(conn) -> dict:
         else 0
     )
 
-    # New this week: datasets updated in the last 7 days
+    # New this week: count of 'added' changes detected in the last 7 days
     now = datetime.now(timezone.utc)
-    new_this_week = 0
-    for ds in all_datasets:
-        if ds.get("updated_at"):
-            try:
-                updated = datetime.fromisoformat(
-                    ds["updated_at"].replace("Z", "+00:00")
-                )
-                if (now - updated).days <= 7:
-                    new_this_week += 1
-            except (ValueError, AttributeError):
-                pass
+    seven_days_ago = now.strftime("%Y-%m-%d")
+    new_this_week_rows = conn.execute(
+        "SELECT COUNT(*) as cnt FROM changes "
+        "WHERE change_type = 'added' AND detected_at >= date('now', '-7 days')"
+    ).fetchone()
+    new_this_week = new_this_week_rows["cnt"] if new_this_week_rows else 0
 
     stats = {
         "total_datasets": total_datasets,
