@@ -378,6 +378,198 @@ a:hover {
     color: rgba(255, 255, 255, 0.6);
 }
 
+/* ===== Hero / Homepage Search ===== */
+.hero {
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+}
+
+.hero h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.hero .hero-subtitle {
+    font-size: 1.1rem;
+    color: var(--mdc-dark-gray);
+    margin-bottom: 1.5rem;
+}
+
+.search-container {
+    position: relative;
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.search-container input[type="search"] {
+    width: 100%;
+    padding: 0.85rem 1rem 0.85rem 2.8rem;
+    font-size: 1.1rem;
+    border: 2px solid var(--mdc-blue);
+    border-radius: var(--mdc-radius);
+    outline: none;
+    background: var(--mdc-white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-container input[type="search"]:focus {
+    border-color: var(--mdc-amber);
+    box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.2);
+}
+
+.search-container input[type="search"]:disabled {
+    background: var(--mdc-light-gray);
+    cursor: not-allowed;
+}
+
+/* CSS-only magnifying glass icon */
+.search-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--mdc-dark-gray);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.search-icon::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    width: 8px;
+    height: 2px;
+    background: var(--mdc-dark-gray);
+    transform: rotate(45deg);
+}
+
+/* ===== Search Dropdown ===== */
+.search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--mdc-white);
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 var(--mdc-radius) var(--mdc-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1001;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.search-dropdown-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--mdc-light-gray);
+    color: var(--mdc-text);
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.search-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.search-dropdown-item:hover {
+    background: #f0f4f8;
+    text-decoration: none;
+}
+
+.search-dropdown-title {
+    font-weight: 600;
+    color: var(--mdc-blue);
+    margin-bottom: 0.15rem;
+}
+
+.search-dropdown-snippet {
+    font-size: 0.85rem;
+    color: var(--mdc-dark-gray);
+    margin-bottom: 0.25rem;
+    line-height: 1.4;
+}
+
+.search-dropdown-dept {
+    font-size: 0.75rem;
+    margin-top: 0.15rem;
+}
+
+.search-dropdown-empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--mdc-dark-gray);
+    font-size: 0.9rem;
+}
+
+/* ===== Category Browse Grid ===== */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.category-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    background: var(--mdc-white);
+    border: 1px solid var(--mdc-light-gray);
+    border-radius: var(--mdc-radius);
+    color: var(--mdc-blue);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: background 0.15s, border-color 0.15s;
+    text-decoration: none;
+}
+
+.category-link:hover {
+    background: #e3f2fd;
+    border-color: var(--mdc-blue);
+    text-decoration: none;
+}
+
+.category-count {
+    background: var(--mdc-light-gray);
+    color: var(--mdc-dark-gray);
+    padding: 0.1rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* ===== Recent Datasets Section ===== */
+.recent-datasets {
+    margin-top: 2rem;
+}
+
+.recent-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--mdc-light-gray);
+}
+
+.recent-item:last-child {
+    border-bottom: none;
+}
+
+.recent-item a {
+    font-weight: 500;
+}
+
+.recent-item .recent-time {
+    font-size: 0.8rem;
+    color: var(--mdc-dark-gray);
+    white-space: nowrap;
+}
+
 /* ===== Utility Classes ===== */
 .text-muted {
     color: var(--mdc-dark-gray);

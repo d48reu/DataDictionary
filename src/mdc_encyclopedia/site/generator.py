@@ -13,6 +13,7 @@ from mdc_encyclopedia.site.context import (
     _staleness_color,
     build_site_data,
 )
+from mdc_encyclopedia.site.search_index import build_search_index
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,11 @@ def generate_site(db_path: str, output_dir: str = "site") -> dict:
     _render_about_page(env, site_data, output_dir)
     stats["about_page"] = 1
 
+    # Build search index
+    index_stats = build_search_index(site_data["datasets"], output_dir)
+    stats["index_size_kb"] = round(index_stats["index_size"] / 1024, 1)
+    stats["data_size_kb"] = round(index_stats["data_size"] / 1024, 1)
+
     # Copy static assets
     _copy_static_assets(output_dir)
 
@@ -136,7 +142,7 @@ def _copy_static_assets(output_dir):
     dest_static = os.path.join(output_dir, "static")
     os.makedirs(dest_static, exist_ok=True)
 
-    for filename in ["style.css", "search.js"]:
+    for filename in ["style.css", "search.js", "filter.js"]:
         src = os.path.join(source_static, filename)
         dst = os.path.join(dest_static, filename)
         if os.path.exists(src):
@@ -191,7 +197,8 @@ def _render_browse_pages(env, site_data, output_dir):
 def _render_dataset_pages(env, site_data, output_dir):
     """Render individual dataset detail pages.
 
-    Creates dataset/{slug}.html for each dataset.
+    Creates dataset/{slug}/index.html for each dataset so URLs resolve
+    as /dataset/{slug}/ with clean paths.
 
     Args:
         env: Jinja2 Environment.
@@ -209,21 +216,104 @@ def _render_dataset_pages(env, site_data, output_dir):
             env,
             "dataset.html",
             context,
-            os.path.join(output_dir, "dataset", f"{slug}.html"),
+            os.path.join(output_dir, "dataset", slug, "index.html"),
         )
 
 
 def _render_changes_page(env, site_data, output_dir):
     """Render the What Changed page.
 
+    Groups raw changes records by type (added, removed, schema) and builds
+    summary counts for display as stat cards.
+
     Args:
         env: Jinja2 Environment.
         site_data: Complete site data dict.
         output_dir: Root output directory.
     """
+    import json as _json
+
+    raw_changes = site_data["changes"]
+
+    # Build slug lookup for linking to dataset pages
+    slug_lookup = {ds["id"]: ds["slug"] for ds in site_data["datasets"]}
+
+    added = []
+    removed = []
+    schema = []
+    detected_at = None
+
+    for ch in raw_changes:
+        ds_id = ch.get("dataset_id", "")
+        title = ch.get("dataset_title") or ch.get("title") or ds_id
+        slug = slug_lookup.get(ds_id)
+        change_type = ch.get("change_type", "")
+
+        if detected_at is None and ch.get("detected_at"):
+            detected_at = ch["detected_at"]
+
+        # Parse details JSON if available
+        details_parsed = ""
+        change_description = ""
+        details_raw = ch.get("details")
+        if details_raw:
+            try:
+                details_obj = _json.loads(details_raw)
+                if isinstance(details_obj, dict):
+                    if details_obj.get("title"):
+                        title = details_obj["title"]
+                    if details_obj.get("columns_added"):
+                        cols = details_obj["columns_added"]
+                        change_description = (
+                            f"{len(cols)} column{'s' if len(cols) != 1 else ''} "
+                            f"added: {', '.join(cols[:5])}"
+                        )
+                        if len(cols) > 5:
+                            change_description += f" (+{len(cols) - 5} more)"
+                    if details_obj.get("columns_removed"):
+                        cols = details_obj["columns_removed"]
+                        change_description = (
+                            f"{len(cols)} column{'s' if len(cols) != 1 else ''} "
+                            f"removed: {', '.join(cols[:5])}"
+                        )
+                        if len(cols) > 5:
+                            change_description += f" (+{len(cols) - 5} more)"
+                    details_parsed = str(details_obj)
+                else:
+                    details_parsed = str(details_raw)
+            except (_json.JSONDecodeError, TypeError):
+                details_parsed = str(details_raw)
+
+        entry = {
+            "dataset_id": ds_id,
+            "title": title,
+            "slug": slug,
+            "source_portal": ch.get("source_portal", ""),
+            "category": ch.get("category", ""),
+            "details_parsed": details_parsed,
+            "change_description": change_description,
+        }
+
+        if change_type == "added":
+            added.append(entry)
+        elif change_type == "removed":
+            removed.append(entry)
+        elif change_type in ("columns_added", "columns_removed", "schema_changed"):
+            schema.append(entry)
+
+    changes_grouped = {
+        "added": added,
+        "removed": removed,
+        "schema": schema,
+        "total_added": len(added),
+        "total_removed": len(removed),
+        "total_schema": len(schema),
+        "detected_at": detected_at,
+    }
+
     context = {
         "page_title": "What Changed",
-        "changes": site_data["changes"],
+        "changes": changes_grouped,
         "generated_at": site_data["generated_at"],
     }
     _render_page(
@@ -234,6 +324,11 @@ def _render_changes_page(env, site_data, output_dir):
 def _render_quality_page(env, site_data, output_dir):
     """Render the Data Quality report page.
 
+    Passes quality_summary as 'quality' to the template for cleaner access.
+    quality_summary contains: total_datasets, avg_score, avg_grade,
+    pct_described, stale_count, grade_distribution, top_findings,
+    dimension_averages, and below_threshold counts.
+
     Args:
         env: Jinja2 Environment.
         site_data: Complete site data dict.
@@ -241,7 +336,7 @@ def _render_quality_page(env, site_data, output_dir):
     """
     context = {
         "page_title": "Data Quality",
-        "quality_summary": site_data["quality_summary"],
+        "quality": site_data["quality_summary"],
         "stats": site_data["stats"],
         "generated_at": site_data["generated_at"],
     }
