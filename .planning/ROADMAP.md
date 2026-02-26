@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Quality Audit** - Staleness detection, completeness scoring, and quality grades for every dataset
 - [x] **Phase 5: Change Detection** - Diff between pulls identifying new, removed, and schema-changed datasets
 - [x] **Phase 6: Static Site** - Searchable, browsable HTML encyclopedia with dataset pages, quality reports, and change history
-- [ ] **Phase 7: Deployment** - GitHub Actions weekly refresh and GitHub Pages hosting
+- [x] **Phase 7: Deployment** - GitHub Actions weekly refresh and GitHub Pages hosting
 
 ## Phase Details
 
@@ -131,8 +131,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — GitHub Actions workflow with cron/push/dispatch triggers, conditional enrichment, DB persistence, and Pages deployment
-- [ ] 07-02-PLAN.md — Verify deployment setup and one-time GitHub Pages configuration
+- [x] 07-01-PLAN.md — GitHub Actions workflow with cron/push/dispatch triggers, conditional enrichment, DB persistence, and Pages deployment
+- [x] 07-02-PLAN.md — Verify deployment setup and one-time GitHub Pages configuration
 
 ## Progress
 
@@ -148,4 +148,4 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 | 4. Quality Audit | 2/2 | Complete | 2026-02-26 |
 | 5. Change Detection | 2/2 | Complete    | 2026-02-26 |
 | 6. Static Site | 5/5 | Complete    | 2026-02-26 |
-| 7. Deployment | 0/2 | Not started | - |
+| 7. Deployment | 2/2 | Complete | 2026-02-26 |
