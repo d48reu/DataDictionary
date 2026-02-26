@@ -45,12 +45,12 @@ class EnrichmentResult(pydantic.BaseModel):
 
 # Model pricing in USD per million tokens
 MODEL_PRICING = {
-    "claude-haiku-4-5-20241022": {"input": 1.00, "output": 5.00},
+    "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},
     "claude-sonnet-4-5-20250929": {"input": 3.00, "output": 15.00},
 }
 
 # Default model for enrichment (Haiku 4.5 for cost efficiency)
-DEFAULT_MODEL = "claude-haiku-4-5-20241022"
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 # Conservative estimate of output tokens per dataset enrichment
 ESTIMATED_OUTPUT_TOKENS = 500
