@@ -31,11 +31,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Quality & Audit
 
-- [ ] **AUDIT-01**: CLI detects stale datasets (last updated exceeds expected frequency)
-- [ ] **AUDIT-02**: CLI flags empty datasets (zero rows or missing data)
-- [ ] **AUDIT-03**: CLI flags poorly described datasets (missing or very short descriptions)
-- [ ] **AUDIT-04**: Each dataset gets a composite quality score (metadata completeness, freshness, column documentation)
-- [ ] **AUDIT-05**: Audit results stored in SQLite audits table
+- [x] **AUDIT-01**: CLI detects stale datasets (last updated exceeds expected frequency)
+- [x] **AUDIT-02**: CLI flags empty datasets (zero rows or missing data)
+- [x] **AUDIT-03**: CLI flags poorly described datasets (missing or very short descriptions)
+- [x] **AUDIT-04**: Each dataset gets a composite quality score (metadata completeness, freshness, column documentation)
+- [x] **AUDIT-05**: Audit results stored in SQLite audits table
 
 ### Change Detection
 
@@ -143,11 +143,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENRICH-08 | Phase 3 | Complete |
 | ENRICH-09 | Phase 3 | Complete |
 | ENRICH-10 | Phase 3 | Complete |
-| AUDIT-01 | Phase 4 | Pending |
-| AUDIT-02 | Phase 4 | Pending |
-| AUDIT-03 | Phase 4 | Pending |
-| AUDIT-04 | Phase 4 | Pending |
-| AUDIT-05 | Phase 4 | Pending |
+| AUDIT-01 | Phase 4 | Complete |
+| AUDIT-02 | Phase 4 | Complete |
+| AUDIT-03 | Phase 4 | Complete |
+| AUDIT-04 | Phase 4 | Complete |
+| AUDIT-05 | Phase 4 | Complete |
 | DIFF-01 | Phase 5 | Pending |
 | DIFF-02 | Phase 5 | Pending |
 | DIFF-03 | Phase 5 | Pending |
