@@ -146,5 +146,5 @@ Note: Phases 3, 4, and 5 can proceed in parallel after Phase 2 but are sequenced
 | 3. AI Enrichment | 2/2 | Complete | 2026-02-25 |
 | 4. Quality Audit | 2/2 | Complete | 2026-02-26 |
 | 5. Change Detection | 2/2 | Complete    | 2026-02-26 |
-| 6. Static Site | 5/5 | Complete | 2026-02-26 |
+| 6. Static Site | 5/5 | Complete    | 2026-02-26 |
 | 7. Deployment | 0/TBD | Not started | - |
