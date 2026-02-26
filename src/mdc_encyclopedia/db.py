@@ -4,7 +4,7 @@ import json
 import os
 import sqlite3
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS datasets (
@@ -69,6 +69,29 @@ CREATE TABLE IF NOT EXISTS changes (
 );
 """
 
+SCHEMA_V2_UPGRADE = """
+-- Recreate audit_scores with letter_grade, findings_json, and UNIQUE(dataset_id)
+CREATE TABLE IF NOT EXISTS audit_scores_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dataset_id TEXT NOT NULL UNIQUE REFERENCES datasets(id),
+    composite_score REAL,
+    letter_grade TEXT,
+    staleness REAL,
+    completeness REAL,
+    documentation REAL,
+    findings_json TEXT,
+    audited_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Migrate existing data (if any)
+INSERT OR IGNORE INTO audit_scores_new (id, dataset_id, composite_score, staleness, completeness, documentation, audited_at)
+    SELECT id, dataset_id, composite_score, staleness, completeness, documentation, audited_at
+    FROM audit_scores;
+
+DROP TABLE audit_scores;
+ALTER TABLE audit_scores_new RENAME TO audit_scores;
+"""
+
 # Fallback schema without json_valid CHECK constraint for Python builds
 # lacking the JSON1 extension.
 SCHEMA_V1_NO_JSON_CHECK = SCHEMA_V1.replace(
@@ -105,10 +128,11 @@ def init_db(db_path: str) -> bool:
         except sqlite3.OperationalError:
             # json_valid() not available -- fall back to schema without CHECK
             conn.executescript(SCHEMA_V1_NO_JSON_CHECK)
-        conn.execute(f"PRAGMA user_version={CURRENT_SCHEMA_VERSION}")
+        conn.execute("PRAGMA user_version=1")
 
-    # Future upgrades:
-    # if version < 2: _upgrade_to_v2(conn)
+    if version < 2:
+        conn.executescript(SCHEMA_V2_UPGRADE)
+        conn.execute(f"PRAGMA user_version={CURRENT_SCHEMA_VERSION}")
 
     conn.commit()
     conn.close()
@@ -289,6 +313,83 @@ def insert_enrichment(
             result["update_frequency"],
             result["civic_relevance"],
             prompt_version,
+        ),
+    )
+    conn.commit()
+
+
+def get_all_datasets_for_audit(conn: sqlite3.Connection) -> list[dict]:
+    """Get all datasets with enrichment and column metadata for audit scoring.
+
+    Joins datasets with enrichments (for update_freq) and computes column
+    counts per dataset. Results are ordered by title for deterministic output.
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+
+    Returns:
+        List of dicts with all dataset fields plus: update_freq (str or None),
+        column_count (int), documented_column_count (int).
+    """
+    rows = conn.execute(
+        """
+        SELECT d.*,
+               e.update_freq,
+               COALESCE(col_stats.column_count, 0) AS column_count,
+               COALESCE(col_stats.documented_column_count, 0) AS documented_column_count
+        FROM datasets d
+        LEFT JOIN enrichments e ON d.id = e.dataset_id
+        LEFT JOIN (
+            SELECT dataset_id,
+                   COUNT(*) AS column_count,
+                   COUNT(CASE WHEN description IS NOT NULL AND description != '' THEN 1 END) AS documented_column_count
+            FROM columns
+            GROUP BY dataset_id
+        ) col_stats ON d.id = col_stats.dataset_id
+        ORDER BY d.title
+        """
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def upsert_audit_score(
+    conn: sqlite3.Connection,
+    dataset_id: str,
+    composite_score: float,
+    letter_grade: str,
+    staleness: float,
+    completeness: float,
+    documentation: float,
+    findings_json: str,
+) -> None:
+    """Insert or replace an audit score record for a dataset.
+
+    Uses INSERT OR REPLACE to ensure only the latest audit per dataset is
+    stored. Commits immediately after insert for consistency.
+
+    Args:
+        conn: An open sqlite3.Connection (caller manages lifecycle).
+        dataset_id: The dataset ID this audit score belongs to.
+        composite_score: Weighted composite score (0.0-1.0).
+        letter_grade: Letter grade (A-F).
+        staleness: Freshness dimension score (0.0-1.0).
+        completeness: Completeness dimension score (0.0-1.0).
+        documentation: Documentation dimension score (0.0-1.0).
+        findings_json: JSON-serialized list of finding strings.
+    """
+    conn.execute(
+        """INSERT OR REPLACE INTO audit_scores
+        (dataset_id, composite_score, letter_grade, staleness, completeness,
+         documentation, findings_json, audited_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+        (
+            dataset_id,
+            composite_score,
+            letter_grade,
+            staleness,
+            completeness,
+            documentation,
+            findings_json,
         ),
     )
     conn.commit()
