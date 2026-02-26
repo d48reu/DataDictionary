@@ -47,7 +47,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Static Site
 
-- [ ] **SITE-01**: Full-text search via Lunr.js or Fuse.js with JSON index built at export time
+- [x] **SITE-01**: Full-text search via Lunr.js or Fuse.js with JSON index built at export time
 - [ ] **SITE-02**: Category/theme browse pages with dataset listings
 - [ ] **SITE-03**: Individual dataset pages showing metadata, AI enrichment, columns, quality score, source link
 - [ ] **SITE-04**: Related datasets shown on each dataset page (tag/category overlap)
@@ -153,7 +153,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DIFF-03 | Phase 5 | Complete |
 | DIFF-04 | Phase 5 | Complete |
 | DIFF-05 | Phase 5 | Complete |
-| SITE-01 | Phase 6 | Pending |
+| SITE-01 | Phase 6 | Complete |
 | SITE-02 | Phase 6 | Pending |
 | SITE-03 | Phase 6 | Pending |
 | SITE-04 | Phase 6 | Pending |
