@@ -468,6 +468,104 @@ def serve():
 
 
 @cli.command()
-def stats():
+@click.pass_context
+def stats(ctx):
     """Show database summary: dataset counts, enrichment status, quality overview."""
-    console.print("[yellow]Not yet implemented[/yellow]")
+    db_path = ctx.obj["db_path"]
+    conn = get_connection(db_path)
+
+    # Total datasets
+    total_datasets = conn.execute("SELECT COUNT(*) FROM datasets").fetchone()[0]
+
+    if total_datasets == 0:
+        console.print("[yellow]No datasets in database. Run `mdc-encyclopedia pull` first.[/yellow]")
+        conn.close()
+        return
+
+    # Section 1: Datasets by Portal
+    portal_rows = conn.execute(
+        "SELECT source_portal, COUNT(*) as cnt FROM datasets GROUP BY source_portal"
+    ).fetchall()
+
+    portal_table = Table(title="Datasets by Portal")
+    portal_table.add_column("Portal", style="bold")
+    portal_table.add_column("Count", justify="right")
+
+    for row in portal_rows:
+        portal_table.add_row(row["source_portal"], str(row["cnt"]))
+
+    portal_table.add_section()
+    portal_table.add_row("Total", str(total_datasets))
+
+    console.print(portal_table)
+
+    # Section 2: Enrichment Status
+    enriched_count = conn.execute("SELECT COUNT(*) FROM enrichments").fetchone()[0]
+    pending_count = total_datasets - enriched_count
+
+    enrichment_table = Table(title="Enrichment Status")
+    enrichment_table.add_column("Status", style="bold")
+    enrichment_table.add_column("Count", justify="right")
+
+    enrichment_table.add_row("[green]Enriched[/green]", str(enriched_count))
+    enrichment_table.add_row("[yellow]Pending[/yellow]", str(pending_count))
+
+    console.print(enrichment_table)
+
+    # Section 3: Quality Score Distribution (conditional)
+    audit_count = conn.execute("SELECT COUNT(*) FROM audit_scores").fetchone()[0]
+
+    if audit_count > 0:
+        grade_rows = conn.execute(
+            "SELECT letter_grade, COUNT(*) as cnt FROM audit_scores GROUP BY letter_grade ORDER BY letter_grade"
+        ).fetchall()
+
+        grade_colors = {"A": "green", "B": "blue", "C": "yellow", "D": "red", "F": "bold red"}
+
+        quality_table = Table(title="Quality Score Distribution")
+        quality_table.add_column("Grade", style="bold")
+        quality_table.add_column("Count", justify="right")
+        quality_table.add_column("Percentage", justify="right")
+
+        for row in grade_rows:
+            grade = row["letter_grade"]
+            count = row["cnt"]
+            pct = (count / audit_count) * 100
+            color = grade_colors.get(grade, "white")
+            quality_table.add_row(
+                f"[{color}]{grade}[/{color}]",
+                str(count),
+                f"{pct:.1f}%",
+            )
+
+        console.print(quality_table)
+
+        # Section 4: Top Findings (conditional)
+        findings_rows = conn.execute(
+            "SELECT findings_json FROM audit_scores WHERE findings_json IS NOT NULL"
+        ).fetchall()
+
+        findings_counter: Counter = Counter()
+        for row in findings_rows:
+            try:
+                findings_list = json.loads(row["findings_json"])
+                for finding in findings_list:
+                    findings_counter[finding] += 1
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        if findings_counter:
+            findings_table = Table(title="Top Findings")
+            findings_table.add_column("Finding", style="bold")
+            findings_table.add_column("Count", justify="right")
+
+            for finding, count in findings_counter.most_common(5):
+                findings_table.add_row(finding, str(count))
+
+            console.print(findings_table)
+    else:
+        console.print(
+            Panel("[yellow]No audit data. Run `mdc-encyclopedia audit` first.[/yellow]", title="Quality Scores")
+        )
+
+    conn.close()
