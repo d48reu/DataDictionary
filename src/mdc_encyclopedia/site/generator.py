@@ -5,6 +5,7 @@ import os
 import shutil
 
 from jinja2 import Environment, FileSystemLoader
+from slugify import slugify as _slugify
 
 from mdc_encyclopedia.db import get_connection
 from mdc_encyclopedia.site.context import (
@@ -49,6 +50,7 @@ def generate_site(db_path: str, output_dir: str = "site") -> dict:
     env.filters["relative_time"] = _relative_time
     env.filters["staleness_color"] = _staleness_color
     env.filters["grade_class"] = _grade_class
+    env.filters["slugify"] = _slugify
 
     # Create output directory structure
     subdirs = [

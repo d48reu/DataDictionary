@@ -45,7 +45,7 @@
     <div class="category-grid">
         {% for category, datasets_list in categories.items()|sort %}
         {% if loop.index <= 15 %}
-        <a href="/browse/{{ category|lower|replace(' ', '-')|replace('/', '-') }}/" class="category-link">
+        <a href="/browse/{{ category|slugify }}/" class="category-link">
             <span>{{ category }}</span>
             <span class="category-count">{{ datasets_list|length }}</span>
         </a>
