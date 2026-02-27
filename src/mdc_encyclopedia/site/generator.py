@@ -95,9 +95,6 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
     _render_quality_page(env, site_data, output_dir)
     stats["quality_page"] = 1
 
-    _render_about_page(env, site_data, output_dir)
-    stats["about_page"] = 1
-
     # Build search index
     index_stats = build_search_index(site_data["datasets"], output_dir, base_url=base_url)
     stats["index_size_kb"] = round(index_stats["index_size"] / 1024, 1)
@@ -106,11 +103,23 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
     # Copy static assets
     _copy_static_assets(output_dir)
 
+    # Catalog export (unconditional -- runs before About page so stats are available)
+    from mdc_encyclopedia.site.catalog_export import generate_catalog_json, generate_catalog_csv
+    json_stats = generate_catalog_json(site_data, output_dir)
+    csv_stats = generate_catalog_csv(site_data, output_dir)
+    stats["catalog_json_size"] = json_stats["file_size"]
+    stats["catalog_csv_size"] = csv_stats["file_size"]
+    stats["catalog_dataset_count"] = json_stats["dataset_count"]
+
     # Atom feed generation (gated on site_url presence)
     if site_url:
         from mdc_encyclopedia.site.feed import generate_atom_feed
         feed_stats = generate_atom_feed(site_data, output_dir, site_url)
         stats["feed_entries"] = feed_stats["entry_count"]
+
+    # About page rendered after catalog export so file sizes are in stats
+    _render_about_page(env, site_data, output_dir, stats=stats)
+    stats["about_page"] = 1
 
     total_pages = (
         stats["homepage"]
@@ -423,18 +432,22 @@ def _render_quality_page(env, site_data, output_dir):
     )
 
 
-def _render_about_page(env, site_data, output_dir):
+def _render_about_page(env, site_data, output_dir, stats=None):
     """Render the About page.
 
     Args:
         env: Jinja2 Environment.
         site_data: Complete site data dict.
         output_dir: Root output directory.
+        stats: Optional build stats dict with catalog file sizes.
     """
+    stats = stats or {}
     context = {
         "page_title": "About",
         "stats": site_data["stats"],
         "generated_at": site_data["generated_at"],
+        "catalog_json_size_kb": round(stats.get("catalog_json_size", 0) / 1024, 1),
+        "catalog_csv_size_kb": round(stats.get("catalog_csv_size", 0) / 1024, 1),
     }
     _render_page(
         env, "about.html", context, os.path.join(output_dir, "about", "index.html")

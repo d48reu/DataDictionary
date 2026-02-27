@@ -688,6 +688,10 @@ def export_site(ctx, output, base_url, site_url):
     table.add_row("Output directory", stats.get("output_dir", output))
     if stats.get("feed_entries") is not None:
         table.add_row("Feed entries", str(stats["feed_entries"]))
+    if stats.get("catalog_dataset_count") is not None:
+        table.add_row("Catalog datasets", str(stats["catalog_dataset_count"]))
+        table.add_row("Catalog JSON", f"{round(stats.get('catalog_json_size', 0) / 1024, 1)} KB")
+        table.add_row("Catalog CSV", f"{round(stats.get('catalog_csv_size', 0) / 1024, 1)} KB")
 
     console.print(table)
     console.print(f"[green]Site generated in {output}/[/green]")
