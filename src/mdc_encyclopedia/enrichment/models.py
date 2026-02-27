@@ -43,6 +43,28 @@ class EnrichmentResult(pydantic.BaseModel):
     )
 
 
+class FieldDescription(pydantic.BaseModel):
+    """AI-generated description for a single dataset column."""
+
+    column_name: str = pydantic.Field(
+        description="Exact column name as provided in the input"
+    )
+    description: str = pydantic.Field(
+        description=(
+            "Plain-English description of what this column contains, "
+            "1-2 sentences, understandable by a non-technical resident"
+        )
+    )
+
+
+class FieldEnrichmentResult(pydantic.BaseModel):
+    """Structured output for field-level enrichment via Claude API."""
+
+    field_descriptions: list[FieldDescription] = pydantic.Field(
+        description="One description per column provided in the input"
+    )
+
+
 # Model pricing in USD per million tokens
 MODEL_PRICING = {
     "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},
