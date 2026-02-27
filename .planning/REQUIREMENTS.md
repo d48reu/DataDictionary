@@ -9,9 +9,9 @@ Requirements for milestone v1.1 Regional Expansion. Each maps to roadmap phases.
 
 ### Multi-Jurisdiction
 
-- [ ] **MULTI-01**: Jurisdiction registry mapping slugs to portal base URLs and display names
+- [x] **MULTI-01**: Jurisdiction registry mapping slugs to portal base URLs and display names
 - [ ] **MULTI-02**: Hub client parameterized to accept base URL for any ArcGIS Hub portal
-- [ ] **MULTI-03**: Schema V3 migration — synthetic composite key, ai_description column, source_portal index, existing data migration
+- [x] **MULTI-03**: Schema V3 migration — synthetic composite key, ai_description column, source_portal index, existing data migration
 - [ ] **MULTI-04**: CLI `pull --jurisdiction` flag to pull from specific jurisdiction(s)
 - [ ] **MULTI-05**: Jurisdiction filter dropdown on browse page
 - [ ] **MULTI-06**: Jurisdiction badge on dataset cards and detail pages
@@ -74,9 +74,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MULTI-01 | Phase 8 | Pending |
+| MULTI-01 | Phase 8 | Complete |
 | MULTI-02 | Phase 8 | Pending |
-| MULTI-03 | Phase 8 | Pending |
+| MULTI-03 | Phase 8 | Complete |
 | MULTI-04 | Phase 8 | Pending |
 | MULTI-05 | Phase 12 | Pending |
 | MULTI-06 | Phase 12 | Pending |
