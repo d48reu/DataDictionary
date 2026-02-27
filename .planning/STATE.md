@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 10 - Enriched Catalog Export
+**Current focus:** Phase 11 - AI Field-Level Descriptions
 
 ## Current Position
 
-Phase: 10 of 12 (Enriched Catalog Export) -- COMPLETE
-Plan: 1 of 1 in current phase
-Status: Phase Complete
-Last activity: 2026-02-27 -- Completed 10-01 (Enriched Catalog Export)
+Phase: 11 of 12 (AI Field-Level Descriptions)
+Plan: 1 of 2 in current phase
+Status: Plan 01 Complete
+Last activity: 2026-02-27 -- Completed 11-01 (Field Enrichment Backend)
 
-Progress: [========================........] 76% (v1.0 complete, phases 8-10 complete)
+Progress: [=========================.......] 80% (v1.0 complete, phases 8-10 complete, 11-01 done)
 
 ## Performance Metrics
 
@@ -30,6 +30,7 @@ Progress: [========================........] 76% (v1.0 complete, phases 8-10 com
 | 08 (Multi-Jurisdiction Foundation) | 2/2 | 8 min | 4.0 min |
 | 09 (Atom Feed) | 1/1 | 3 min | 3.0 min |
 | 10 (Enriched Catalog Export) | 1/1 | 4 min | 4.0 min |
+| 11 (AI Field-Level Descriptions) | 1/2 | 4 min | 4.0 min |
 
 *Updated after each plan completion*
 
@@ -54,6 +55,9 @@ All v1.0 decisions archived in PROJECT.md Key Decisions table.
 - 10-01: ext_ prefix convention for AI enrichment fields in DCAT-US JSON avoids namespace collisions
 - 10-01: Catalog export runs unconditionally (no gating flag) unlike Atom feed
 - 10-01: About page render moved after catalog export so file sizes are available in template
+- 11-01: Case-insensitive fallback for column name matching in update_column_ai_descriptions
+- 11-01: Best-effort sample value fetch with 10s httpx timeout (non-blocking on failure)
+- 11-01: Batch size of 30 columns per API call for field enrichment chunking
 
 ### Pending Todos
 
@@ -62,10 +66,10 @@ None.
 ### Blockers/Concerns
 
 - Phase 11 field enrichment cost needs re-estimation after Phase 8 adds new jurisdiction data
-- Enrichment command needs future update to pass jurisdiction context to build_system_prompt() (Phase 11 scope)
+- RESOLVED: Enrichment command now passes jurisdiction context to build_system_prompt() (wired in 11-01)
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 10-01-PLAN.md (Enriched Catalog Export) -- Phase 10 complete
+Stopped at: Completed 11-01-PLAN.md (Field Enrichment Backend)
 Resume file: None
