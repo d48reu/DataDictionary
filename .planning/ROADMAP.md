@@ -28,7 +28,7 @@ Full details: `milestones/v1.0-ROADMAP.md`
 
 - [ ] **Phase 8: Multi-Jurisdiction Foundation** - Jurisdiction registry, parameterized hub client, Schema V3 migration, and per-jurisdiction CLI pull
 - [ ] **Phase 9: Atom Feed** - Subscribable Atom 1.0 feed for catalog changes with autodiscovery and absolute URLs
-- [ ] **Phase 10: Enriched Catalog Export** - Downloadable JSON and CSV catalog with DCAT-US alignment and download links on About page
+- [x] **Phase 10: Enriched Catalog Export** - Downloadable JSON and CSV catalog with DCAT-US alignment and download links on About page (completed 2026-02-27)
 - [ ] **Phase 11: AI Field-Level Descriptions** - AI-generated plain-English column descriptions for B+ datasets with CLI command and inline display
 - [ ] **Phase 12: Site UI Polish and CI Pipeline** - Jurisdiction filter, badges, search index update, and multi-jurisdiction CI pipeline
 
@@ -125,6 +125,6 @@ Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each oth
 | 7. Deployment | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 8. Multi-Jurisdiction Foundation | v1.1 | 0/TBD | Not started | - |
 | 9. Atom Feed | v1.1 | 0/TBD | Not started | - |
-| 10. Enriched Catalog Export | v1.1 | 0/TBD | Not started | - |
+| 10. Enriched Catalog Export | 1/1 | Complete   | 2026-02-27 | - |
 | 11. AI Field-Level Descriptions | v1.1 | 0/TBD | Not started | - |
 | 12. Site UI Polish and CI Pipeline | v1.1 | 0/TBD | Not started | - |

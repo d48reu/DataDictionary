@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 9 - Atom Feed
+**Current focus:** Phase 10 - Enriched Catalog Export
 
 ## Current Position
 
-Phase: 9 of 12 (Atom Feed) -- COMPLETE
+Phase: 10 of 12 (Enriched Catalog Export) -- COMPLETE
 Plan: 1 of 1 in current phase
 Status: Phase Complete
-Last activity: 2026-02-27 -- Completed 09-01 (Atom Feed Generation)
+Last activity: 2026-02-27 -- Completed 10-01 (Enriched Catalog Export)
 
-Progress: [=======================.........] 72% (v1.0 complete, phases 8-9 complete)
+Progress: [========================........] 76% (v1.0 complete, phases 8-10 complete)
 
 ## Performance Metrics
 
@@ -29,6 +29,7 @@ Progress: [=======================.........] 72% (v1.0 complete, phases 8-9 comp
 |-------|-------|-------|----------|
 | 08 (Multi-Jurisdiction Foundation) | 2/2 | 8 min | 4.0 min |
 | 09 (Atom Feed) | 1/1 | 3 min | 3.0 min |
+| 10 (Enriched Catalog Export) | 1/1 | 4 min | 4.0 min |
 
 *Updated after each plan completion*
 
@@ -50,6 +51,9 @@ All v1.0 decisions archived in PROJECT.md Key Decisions table.
 - 09-01: Prefix tag format for feed entry titles: [New], [Removed], [Schema Change]
 - 09-01: Tag URI scheme for entry IDs ensures stability across rebuilds
 - 09-01: Feed generation gated on --site-url; omitting skips with warning
+- 10-01: ext_ prefix convention for AI enrichment fields in DCAT-US JSON avoids namespace collisions
+- 10-01: Catalog export runs unconditionally (no gating flag) unlike Atom feed
+- 10-01: About page render moved after catalog export so file sizes are available in template
 
 ### Pending Todos
 
@@ -63,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 09-01-PLAN.md (Atom Feed Generation) -- Phase 9 complete
+Stopped at: Completed 10-01-PLAN.md (Enriched Catalog Export) -- Phase 10 complete
 Resume file: None

@@ -26,9 +26,9 @@ Requirements for milestone v1.1 Regional Expansion. Each maps to roadmap phases.
 
 ### Catalog Export
 
-- [ ] **EXPORT-01**: Downloadable enriched catalog as JSON with DCAT-US v1.1 field alignment and jurisdiction field
-- [ ] **EXPORT-02**: Downloadable enriched catalog as CSV with UTF-8 BOM for Excel
-- [ ] **EXPORT-03**: Download links on About page with format and file size
+- [x] **EXPORT-01**: Downloadable enriched catalog as JSON with DCAT-US v1.1 field alignment and jurisdiction field
+- [x] **EXPORT-02**: Downloadable enriched catalog as CSV with UTF-8 BOM for Excel
+- [x] **EXPORT-03**: Download links on About page with format and file size
 
 ### Field AI
 
@@ -85,9 +85,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FEED-01 | Phase 9 | Complete |
 | FEED-02 | Phase 9 | Complete |
 | FEED-03 | Phase 9 | Complete |
-| EXPORT-01 | Phase 10 | Pending |
-| EXPORT-02 | Phase 10 | Pending |
-| EXPORT-03 | Phase 10 | Pending |
+| EXPORT-01 | Phase 10 | Complete |
+| EXPORT-02 | Phase 10 | Complete |
+| EXPORT-03 | Phase 10 | Complete |
 | FIELD-01 | Phase 11 | Pending |
 | FIELD-02 | Phase 11 | Pending |
 | FIELD-03 | Phase 11 | Pending |
