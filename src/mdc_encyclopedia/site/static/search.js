@@ -26,9 +26,17 @@
       navSearchInput.placeholder = 'Loading...';
     }
 
+    /* Detect base URL from stylesheet link (works for any deployment path) */
+    var baseUrl = '';
+    var cssLink = document.querySelector('link[rel="stylesheet"][href$="/static/style.css"]');
+    if (cssLink) {
+      var href = cssLink.getAttribute('href');
+      baseUrl = href.replace('/static/style.css', '');
+    }
+
     Promise.all([
-      fetch('/search-index.json').then(function (r) { return r.json(); }),
-      fetch('/search-data.json').then(function (r) { return r.json(); })
+      fetch(baseUrl + '/search-index.json').then(function (r) { return r.json(); }),
+      fetch(baseUrl + '/search-data.json').then(function (r) { return r.json(); })
     ])
       .then(function (results) {
         var indexData = results[0];

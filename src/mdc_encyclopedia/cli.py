@@ -579,12 +579,15 @@ def diff(ctx, latest, show_all):
 
 @cli.command(name="export")
 @click.option("--output", "-o", default="site", help="Output directory for the generated site.")
+@click.option("--base-url", default="", help="Base URL prefix for GitHub Pages (e.g. /DataDictionary).")
 @click.pass_context
-def export_site(ctx, output):
+def export_site(ctx, output, base_url):
     """Generate static HTML site from the catalog database."""
     from mdc_encyclopedia.site.generator import generate_site
 
     db_path = ctx.obj["db_path"]
+    # Strip trailing slash from base_url
+    base_url = base_url.rstrip("/")
 
     with Progress(
         SpinnerColumn(),
@@ -593,7 +596,7 @@ def export_site(ctx, output):
         console=console,
     ) as progress:
         progress.add_task("Generating site...", total=None)
-        stats = generate_site(db_path, output)
+        stats = generate_site(db_path, output, base_url=base_url)
 
     table = Table(title="Export Summary")
     table.add_column("Metric", style="bold")

@@ -31,7 +31,7 @@
             <div class="dataset-info">
                 <div class="dataset-title">
                     {% if ds.slug %}
-                    <a href="/dataset/{{ ds.slug }}/">{{ ds.title or ds.dataset_id }}</a>
+                    <a href="{{ base_url }}/dataset/{{ ds.slug }}/">{{ ds.title or ds.dataset_id }}</a>
                     {% else %}
                     {{ ds.title or ds.dataset_id }}
                     {% endif %}
@@ -76,7 +76,7 @@
             <div class="dataset-info">
                 <div class="dataset-title">
                     {% if ds.slug %}
-                    <a href="/dataset/{{ ds.slug }}/">{{ ds.title or ds.dataset_id }}</a>
+                    <a href="{{ base_url }}/dataset/{{ ds.slug }}/">{{ ds.title or ds.dataset_id }}</a>
                     {% else %}
                     {{ ds.title or ds.dataset_id }}
                     {% endif %}

@@ -45,7 +45,7 @@
     <div class="category-grid">
         {% for category, datasets_list in categories.items()|sort %}
         {% if loop.index <= 15 %}
-        <a href="/browse/{{ category|slugify }}/" class="category-link">
+        <a href="{{ base_url }}/browse/{{ category|slugify }}/" class="category-link">
             <span>{{ category }}</span>
             <span class="category-count">{{ datasets_list|length }}</span>
         </a>
@@ -53,7 +53,7 @@
         {% endfor %}
     </div>
     {% if categories|length > 15 %}
-    <p class="text-muted mt-1" style="font-size: 0.9rem;"><a href="/browse/">View all {{ categories|length }} categories</a></p>
+    <p class="text-muted mt-1" style="font-size: 0.9rem;"><a href="{{ base_url }}/browse/">View all {{ categories|length }} categories</a></p>
     {% endif %}
 </section>
 {% endif %}
@@ -64,7 +64,7 @@
     <h2>Recently Updated</h2>
     {% for ds in recent_datasets[:5] %}
     <div class="recent-item">
-        <a href="/dataset/{{ ds.slug }}/">{{ ds.title }}</a>
+        <a href="{{ base_url }}/dataset/{{ ds.slug }}/">{{ ds.title }}</a>
         <span class="recent-time">{{ ds.relative_time }}</span>
     </div>
     {% endfor %}

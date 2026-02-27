@@ -9,7 +9,7 @@ from lunr import lunr
 logger = logging.getLogger(__name__)
 
 
-def build_search_index(datasets: list[dict], output_dir: str) -> dict:
+def build_search_index(datasets: list[dict], output_dir: str, base_url: str = "") -> dict:
     """Build Lunr.js-compatible search index and write JSON files.
 
     Creates two files:
@@ -64,7 +64,7 @@ def build_search_index(datasets: list[dict], output_dir: str) -> dict:
             "title": title,
             "snippet": snippet,
             "department": department,
-            "url": f"/dataset/{slug}/",
+            "url": f"{base_url}/dataset/{slug}/",
             "grade": ds.get("letter_grade") or "",
         }
 

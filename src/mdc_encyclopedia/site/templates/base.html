@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MDC Data Encyclopedia{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ base_url }}/static/style.css">
     {% block head %}{% endblock %}
 </head>
 <body>
     <nav class="top-nav">
         <div class="nav-container">
-            <a href="/" class="nav-brand">MDC Data Encyclopedia</a>
+            <a href="{{ base_url }}/" class="nav-brand">MDC Data Encyclopedia</a>
             <input type="checkbox" id="nav-toggle" class="nav-toggle-checkbox">
             <label for="nav-toggle" class="nav-toggle-label">
                 <span></span>
@@ -18,10 +18,10 @@
                 <span></span>
             </label>
             <ul class="nav-links">
-                <li><a href="/browse/">Browse</a></li>
-                <li><a href="/changes/">What Changed</a></li>
-                <li><a href="/quality/">Data Quality</a></li>
-                <li><a href="/about/">About</a></li>
+                <li><a href="{{ base_url }}/browse/">Browse</a></li>
+                <li><a href="{{ base_url }}/changes/">What Changed</a></li>
+                <li><a href="{{ base_url }}/quality/">Data Quality</a></li>
+                <li><a href="{{ base_url }}/about/">About</a></li>
                 {% block nav_search %}
                 <li class="nav-search">
                     <input type="search" id="nav-search-input" placeholder="Search datasets..." aria-label="Search datasets">
@@ -44,7 +44,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js"></script>
-    <script src="/static/search.js"></script>
+    <script src="{{ base_url }}/static/search.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

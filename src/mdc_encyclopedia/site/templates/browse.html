@@ -52,7 +52,7 @@
         </div>
         <div class="dataset-info">
             <div class="dataset-title">
-                <a href="/dataset/{{ ds.slug }}/">{{ ds.title }}</a>
+                <a href="{{ base_url }}/dataset/{{ ds.slug }}/">{{ ds.title }}</a>
             </div>
             <div class="dataset-desc">{{ (ds.ai_description or ds.description or 'No description available')|truncate(120) }}</div>
             <div class="dataset-meta">
@@ -73,7 +73,7 @@
 <!-- Empty State -->
 <div class="empty-state">
     <p>No datasets in this category.</p>
-    <p><a href="/browse/">Browse all categories</a></p>
+    <p><a href="{{ base_url }}/browse/">Browse all categories</a></p>
 </div>
 {% endif %}
 
@@ -81,6 +81,6 @@
 
 {% block scripts %}
 {% if datasets %}
-<script src="/static/filter.js"></script>
+<script src="{{ base_url }}/static/filter.js"></script>
 {% endif %}
 {% endblock %}

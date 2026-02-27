@@ -133,7 +133,7 @@ jobs:
       # --- Export + Deploy (all triggers) ---
 
       - name: Export static site
-        run: mdc-encyclopedia export -o site
+        run: mdc-encyclopedia export -o site --base-url /${{ github.event.repository.name }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4

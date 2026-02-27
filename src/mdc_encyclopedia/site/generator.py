@@ -19,7 +19,7 @@ from mdc_encyclopedia.site.search_index import build_search_index
 logger = logging.getLogger(__name__)
 
 
-def generate_site(db_path: str, output_dir: str = "site") -> dict:
+def generate_site(db_path: str, output_dir: str = "site", base_url: str = "") -> dict:
     """Generate the complete static site from the database.
 
     Reads DB via context.py, sets up Jinja2, renders all page templates,
@@ -51,6 +51,9 @@ def generate_site(db_path: str, output_dir: str = "site") -> dict:
     env.filters["staleness_color"] = _staleness_color
     env.filters["grade_class"] = _grade_class
     env.filters["slugify"] = _slugify
+
+    # Set base_url as a global so all templates can access it
+    env.globals["base_url"] = base_url
 
     # Create output directory structure
     subdirs = [
@@ -95,7 +98,7 @@ def generate_site(db_path: str, output_dir: str = "site") -> dict:
     stats["about_page"] = 1
 
     # Build search index
-    index_stats = build_search_index(site_data["datasets"], output_dir)
+    index_stats = build_search_index(site_data["datasets"], output_dir, base_url=base_url)
     stats["index_size_kb"] = round(index_stats["index_size"] / 1024, 1)
     stats["data_size_kb"] = round(index_stats["data_size"] / 1024, 1)
 
