@@ -116,7 +116,7 @@ def build_site_data(conn) -> dict:
     # Changes
     change_rows = conn.execute(
         """
-        SELECT c.*, d.title AS dataset_title
+        SELECT c.*, d.title AS dataset_title, d.jurisdiction
         FROM changes c
         LEFT JOIN datasets d ON c.dataset_id = d.id
         ORDER BY c.detected_at DESC
