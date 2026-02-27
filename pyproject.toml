@@ -23,6 +23,7 @@ dependencies = [
     "lunr>=0.8",
     "python-slugify>=8.0",
     "pyyaml>=6.0",
+    "feedgen>=1.0,<2.0",
 ]
 
 [project.scripts]
@@ -40,4 +41,5 @@ packages = ["src/mdc_encyclopedia"]
 "src/mdc_encyclopedia/site/generator.py" = "mdc_encyclopedia/site/generator.py"
 "src/mdc_encyclopedia/site/context.py" = "mdc_encyclopedia/site/context.py"
 "src/mdc_encyclopedia/site/search_index.py" = "mdc_encyclopedia/site/search_index.py"
+"src/mdc_encyclopedia/site/feed.py" = "mdc_encyclopedia/site/feed.py"
 "src/mdc_encyclopedia/jurisdictions.yaml" = "mdc_encyclopedia/jurisdictions.yaml"
