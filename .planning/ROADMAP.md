@@ -109,11 +109,11 @@ Plans:
   2. Every dataset card and detail page displays a jurisdiction badge showing which government published the data
   3. Searching for a jurisdiction name (e.g., "Broward") in the site search returns datasets from that jurisdiction
   4. The GitHub Actions CI pipeline pulls from all three jurisdictions, builds the site with feeds and exports, and deploys to GitHub Pages without manual intervention
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — Jurisdiction filter dropdown, badges, and search index integration
+- [ ] 12-02-PLAN.md — CI pipeline update for multi-jurisdiction pull with optional enrichment
 
 ## Progress
 
@@ -134,4 +134,4 @@ Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each oth
 | 9. Atom Feed | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 10. Enriched Catalog Export | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 11. AI Field-Level Descriptions | 2/2 | Complete    | 2026-02-27 | - |
-| 12. Site UI Polish and CI Pipeline | v1.1 | 0/TBD | Not started | - |
+| 12. Site UI Polish and CI Pipeline | v1.1 | 0/2 | Not started | - |
