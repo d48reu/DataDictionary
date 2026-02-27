@@ -58,16 +58,26 @@ def ms_to_iso(ms_timestamp: int | None) -> str | None:
     return datetime.fromtimestamp(ms_timestamp / 1000, tz=timezone.utc).isoformat()
 
 
-def normalize_hub_dataset(feature: dict) -> dict:
+def normalize_hub_dataset(
+    feature: dict,
+    jurisdiction: str = "miami-dade",
+    hub_url: str = "https://opendata.miamidade.gov",
+) -> dict:
     """Convert an ArcGIS Hub Search API feature to a datasets table row.
 
     Maps Hub API response fields to the normalized schema, stripping HTML
     from descriptions, converting timestamps from milliseconds to ISO 8601,
     parsing categories, and serializing lists/dicts as JSON strings.
 
+    Generates a synthetic composite ID in the format ``{jurisdiction}_{arcgis_id}``
+    and builds source/download URLs from the provided ``hub_url`` so that
+    datasets from any registered ArcGIS Hub portal are handled correctly.
+
     Args:
         feature: A single feature dict from the Hub Search API response
                  (element of the 'features' array in the GeoJSON FeatureCollection).
+        jurisdiction: Jurisdiction slug (e.g., 'miami-dade', 'broward').
+        hub_url: Base URL of the ArcGIS Hub portal for this jurisdiction.
 
     Returns:
         Dict matching the datasets table columns, ready for upsert_dataset.
@@ -84,18 +94,25 @@ def normalize_hub_dataset(feature: dict) -> dict:
 
     # Determine download URL based on dataset type
     ds_type = props.get("type", "")
-    feature_id = feature.get("id", "")
+    arcgis_id = feature.get("id", "")
+    # Strip any trailing slash from hub_url for consistent URL building
+    hub_url_clean = hub_url.rstrip("/")
     if ds_type == "Feature Service":
         download_url = (
-            f"https://opendata.miamidade.gov/api/download/v1/items/{feature_id}/csv?layers=0"
+            f"{hub_url_clean}/api/download/v1/items/{arcgis_id}/csv?layers=0"
         )
     else:
         download_url = None
 
+    # Synthetic composite ID: jurisdiction_arcgis_id
+    synthetic_id = f"{jurisdiction}_{arcgis_id}"
+
     return {
-        "id": feature_id,
+        "id": synthetic_id,
+        "jurisdiction": jurisdiction,
+        "arcgis_id": arcgis_id,
         "source_portal": "arcgis_hub",
-        "source_url": f"https://opendata.miamidade.gov/datasets/{feature_id}",
+        "source_url": f"{hub_url_clean}/datasets/{arcgis_id}",
         "title": props.get("title"),
         "description": strip_html(props.get("description", "")),
         "category": category,

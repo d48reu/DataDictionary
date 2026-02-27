@@ -1,29 +1,19 @@
-"""Prompt templates for AI enrichment of Miami-Dade datasets."""
+"""Prompt templates for AI enrichment of open datasets.
+
+Supports jurisdiction-aware prompts via build_system_prompt(). The Miami-Dade
+department list is included only when the jurisdiction is Miami-Dade; other
+jurisdictions use a generic government reference to avoid incorrect department
+assignments.
+"""
 
 import json
 
 # Bump this version when the prompt changes significantly.
 # Stored with each enrichment record for traceability.
-PROMPT_VERSION = "v1.0"
+PROMPT_VERSION = "v1.1"
 
-SYSTEM_PROMPT = """\
-You are a Miami-Dade County data librarian helping residents understand open datasets.
-
-Write as if explaining to a neighbor -- clear, helpful, no bureaucratic jargon.
-
-For each dataset, provide:
-- A 2-3 sentence description of what this dataset contains and why it matters \
-to Miami-Dade residents.
-- 2-3 practical use cases as specific scenarios (e.g., "A homeowner checking \
-flood risk before buying a property").
-- Search keywords a resident would actually type to find this data.
-- The most likely Miami-Dade County department that owns this data.
-- Expected update frequency based on the data type and any timestamps provided.
-- Civic relevance score using these criteria:
-  HIGH = directly affects residents (permits, transit, health, housing, public safety)
-  MEDIUM = useful for understanding Miami-Dade (budget, demographics, environmental data)
-  LOW = administrative or internal (IT inventory, employee records, internal workflows)
-
+# Department list used only for Miami-Dade County
+_MIAMI_DADE_DEPARTMENTS = """\
 Miami-Dade County departments include:
 Police, Fire Rescue, Water and Sewer, Transit, Parks and Recreation, Aviation, \
 PortMiami, Public Housing, Regulatory and Economic Resources, Internal Services, \
@@ -34,6 +24,64 @@ and others.
 
 When inferring the department, pick the most specific match from the list above. \
 If none fits well, provide your best guess with a brief reason."""
+
+# Generic department guidance for non-Miami-Dade jurisdictions
+_GENERIC_DEPARTMENTS = """\
+When inferring the department, identify the most likely {jurisdiction_display_name} \
+government department or agency that owns this data based on the dataset subject \
+matter. Provide your best guess with a brief reason."""
+
+SYSTEM_PROMPT_TEMPLATE = """\
+You are a {jurisdiction_display_name} data librarian helping residents understand open datasets.
+
+Write as if explaining to a neighbor -- clear, helpful, no bureaucratic jargon.
+
+For each dataset, provide:
+- A 2-3 sentence description of what this dataset contains and why it matters \
+to {jurisdiction_display_name} residents.
+- 2-3 practical use cases as specific scenarios (e.g., "A homeowner checking \
+flood risk before buying a property").
+- Search keywords a resident would actually type to find this data.
+- The most likely {jurisdiction_display_name} department that owns this data.
+- Expected update frequency based on the data type and any timestamps provided.
+- Civic relevance score using these criteria:
+  HIGH = directly affects residents (permits, transit, health, housing, public safety)
+  MEDIUM = useful for understanding {jurisdiction_display_name} (budget, demographics, environmental data)
+  LOW = administrative or internal (IT inventory, employee records, internal workflows)
+
+{department_section}"""
+
+
+def build_system_prompt(jurisdiction_display_name: str = "Miami-Dade County") -> str:
+    """Build a jurisdiction-specific system prompt for AI enrichment.
+
+    Uses the Miami-Dade department list when the jurisdiction is Miami-Dade
+    County; for all other jurisdictions, uses a generic department inference
+    instruction to avoid incorrect department assignments.
+
+    Args:
+        jurisdiction_display_name: Human-readable jurisdiction name
+            (e.g., 'Miami-Dade County', 'Broward County', 'City of Miami').
+
+    Returns:
+        Formatted system prompt string.
+    """
+    if jurisdiction_display_name == "Miami-Dade County":
+        department_section = _MIAMI_DADE_DEPARTMENTS
+    else:
+        department_section = _GENERIC_DEPARTMENTS.format(
+            jurisdiction_display_name=jurisdiction_display_name
+        )
+
+    return SYSTEM_PROMPT_TEMPLATE.format(
+        jurisdiction_display_name=jurisdiction_display_name,
+        department_section=department_section,
+    )
+
+
+# Backward compatibility: existing code that references SYSTEM_PROMPT directly
+# still gets the Miami-Dade version.
+SYSTEM_PROMPT = build_system_prompt("Miami-Dade County")
 
 
 def build_dataset_prompt(dataset: dict, columns: list[dict]) -> str:

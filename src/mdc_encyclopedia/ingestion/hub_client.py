@@ -1,7 +1,8 @@
 """ArcGIS Hub Search API client with pagination, rate limiting, and retry.
 
-Fetches dataset metadata from Miami-Dade County's ArcGIS Hub portal at
-opendata.miamidade.gov using the OGC-compliant Search API.
+Fetches dataset metadata from any ArcGIS Hub portal using the
+OGC-compliant Search API. The base URL is parameterized so callers
+can target any registered jurisdiction's hub.
 """
 
 import time
@@ -11,20 +12,27 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-HUB_BASE_URL = "https://opendata.miamidade.gov"
+DEFAULT_HUB_URL = "https://opendata.miamidade.gov"
 SEARCH_ENDPOINT = "/api/search/v1/collections/dataset/items"
 PAGE_SIZE = 100
 RATE_LIMIT_SECONDS = 1.0
 
 
-def create_client() -> httpx.Client:
+def create_client(base_url: str | None = None) -> httpx.Client:
     """Create an httpx.Client configured for Hub API requests.
 
-    Returns a client with a 30-second timeout and standard User-Agent header.
-    The caller is responsible for closing the client.
+    Args:
+        base_url: The ArcGIS Hub portal base URL (e.g.,
+            'https://opendata.miamidade.gov'). If None, falls back to
+            DEFAULT_HUB_URL for backward compatibility.
+
+    Returns:
+        A client with a 30-second timeout and standard User-Agent header.
+        The caller is responsible for closing the client.
     """
+    url = base_url or DEFAULT_HUB_URL
     return httpx.Client(
-        base_url=HUB_BASE_URL,
+        base_url=url,
         timeout=30.0,
         headers={"User-Agent": "mdc-encyclopedia/0.1.0"},
     )
