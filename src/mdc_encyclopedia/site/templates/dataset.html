@@ -145,7 +145,16 @@
                 <tr>
                     <td><code>{{ col.name }}</code></td>
                     <td>{{ col.data_type|default('--') }}</td>
-                    <td>{{ col.description|default('--') }}</td>
+                    <td>
+                        {% if col.ai_description %}
+                        {{ col.ai_description }}
+                        <span class="ai-badge" title="AI-generated description">AI</span>
+                        {% elif col.description %}
+                        {{ col.description }}
+                        {% else %}
+                        --
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

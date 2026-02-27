@@ -47,7 +47,7 @@ def build_site_data(conn) -> dict:
 
     # Build column lookup: dataset_id -> list of column dicts
     col_rows = conn.execute(
-        "SELECT dataset_id, name, data_type, description FROM columns"
+        "SELECT dataset_id, name, data_type, description, ai_description FROM columns"
     ).fetchall()
     columns_by_dataset = {}
     for col in col_rows:
