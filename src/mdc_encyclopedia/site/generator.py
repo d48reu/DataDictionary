@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 from slugify import slugify as _slugify
 
 from mdc_encyclopedia.db import get_connection
+from mdc_encyclopedia.registry import load_registry
 from mdc_encyclopedia.site.context import (
     _grade_class,
     _relative_time,
@@ -36,6 +37,16 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
     conn = get_connection(db_path)
     site_data = build_site_data(conn)
     conn.close()
+
+    # Inject jurisdiction display names from registry into each dataset dict
+    registry = load_registry()
+    for ds in site_data["datasets"]:
+        slug = ds.get("jurisdiction") or ""
+        ds["jurisdiction_display_name"] = (
+            registry.get(slug, {}).get("display_name", slug.replace("-", " ").title())
+            if slug
+            else ""
+        )
 
     # Set up Jinja2 environment
     template_dir = os.path.join(os.path.dirname(__file__), "templates")
@@ -215,8 +226,15 @@ def _render_browse_pages(env, site_data, output_dir):
     categories = site_data["categories"]
     all_datasets = site_data["datasets"]
 
+    # Build jurisdiction label lookup from registry for dropdown display
+    registry = load_registry()
+    jurisdiction_labels = {
+        slug: info.get("display_name", slug.replace("-", " ").title())
+        for slug, info in registry.items()
+    }
+
     # "Browse All Datasets" page at /browse/index.html
-    all_formats, all_publishers, all_tags = _extract_filter_options(all_datasets)
+    all_formats, all_publishers, all_tags, all_jurisdictions = _extract_filter_options(all_datasets)
     context = {
         "page_title": "Browse All Datasets",
         "category_name": "Browse All Datasets",
@@ -225,6 +243,8 @@ def _render_browse_pages(env, site_data, output_dir):
         "formats": sorted(all_formats),
         "publishers": sorted(all_publishers),
         "tags": sorted(all_tags),
+        "jurisdictions": sorted(all_jurisdictions),
+        "jurisdiction_labels": jurisdiction_labels,
         "generated_at": site_data["generated_at"],
     }
     _render_page(
@@ -234,7 +254,7 @@ def _render_browse_pages(env, site_data, output_dir):
     # Per-category browse pages at /browse/{category-slug}/index.html
     for cat_name, cat_datasets in categories.items():
         cat_slug = _slugify(cat_name) if cat_name else "uncategorized"
-        cat_formats, cat_publishers, cat_tags = _extract_filter_options(cat_datasets)
+        cat_formats, cat_publishers, cat_tags, cat_jurisdictions = _extract_filter_options(cat_datasets)
         context = {
             "page_title": cat_name,
             "category_name": cat_name,
@@ -243,6 +263,8 @@ def _render_browse_pages(env, site_data, output_dir):
             "formats": sorted(cat_formats),
             "publishers": sorted(cat_publishers),
             "tags": sorted(cat_tags),
+            "jurisdictions": sorted(cat_jurisdictions),
+            "jurisdiction_labels": jurisdiction_labels,
             "generated_at": site_data["generated_at"],
         }
         _render_page(
@@ -254,17 +276,19 @@ def _render_browse_pages(env, site_data, output_dir):
 
 
 def _extract_filter_options(datasets):
-    """Extract unique formats, publishers, and tags from a list of datasets.
+    """Extract unique formats, publishers, tags, and jurisdictions from datasets.
 
     Args:
         datasets: List of dataset dicts.
 
     Returns:
-        Tuple of (formats, publishers, tags) as lists of unique lowercase strings.
+        Tuple of (formats, publishers, tags, jurisdictions) as lists of
+        unique lowercase strings.
     """
     formats = set()
     publishers = set()
     tags = set()
+    jurisdictions = set()
 
     for ds in datasets:
         fmt = (ds.get("format") or "").strip()
@@ -277,8 +301,11 @@ def _extract_filter_options(datasets):
             tag = tag.strip()
             if tag:
                 tags.add(tag.lower())
+        jur = (ds.get("jurisdiction") or "").strip()
+        if jur:
+            jurisdictions.add(jur.lower())
 
-    return list(formats), list(publishers), list(tags)
+    return list(formats), list(publishers), list(tags), list(jurisdictions)
 
 
 def _render_dataset_pages(env, site_data, output_dir):

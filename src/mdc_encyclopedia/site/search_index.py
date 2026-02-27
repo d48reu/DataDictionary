@@ -46,6 +46,7 @@ def build_search_index(datasets: list[dict], output_dir: str, base_url: str = ""
         keywords = " ".join(ds.get("keywords_list", []))
         department = ds.get("department") or ""
         category = ds.get("category") or ""
+        jurisdiction = ds.get("jurisdiction_display_name") or ds.get("jurisdiction") or ""
 
         documents.append(
             {
@@ -53,6 +54,7 @@ def build_search_index(datasets: list[dict], output_dir: str, base_url: str = ""
                 "title": title,
                 "description": description,
                 "keywords": keywords,
+                "jurisdiction": jurisdiction,
                 "department": department,
                 "category": category,
             }
@@ -64,6 +66,7 @@ def build_search_index(datasets: list[dict], output_dir: str, base_url: str = ""
             "title": title,
             "snippet": snippet,
             "department": department,
+            "jurisdiction": jurisdiction,
             "url": f"{base_url}/dataset/{slug}/",
             "grade": ds.get("letter_grade") or "",
         }
@@ -74,6 +77,7 @@ def build_search_index(datasets: list[dict], output_dir: str, base_url: str = ""
         fields=[
             {"field_name": "title", "boost": 10},
             {"field_name": "keywords", "boost": 8},
+            {"field_name": "jurisdiction", "boost": 5},
             {"field_name": "description", "boost": 5},
             {"field_name": "department", "boost": 3},
             {"field_name": "category", "boost": 3},
