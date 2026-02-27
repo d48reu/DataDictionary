@@ -13,9 +13,9 @@ Requirements for milestone v1.1 Regional Expansion. Each maps to roadmap phases.
 - [x] **MULTI-02**: Hub client parameterized to accept base URL for any ArcGIS Hub portal
 - [x] **MULTI-03**: Schema V3 migration — synthetic composite key, ai_description column, source_portal index, existing data migration
 - [x] **MULTI-04**: CLI `pull --jurisdiction` flag to pull from specific jurisdiction(s)
-- [ ] **MULTI-05**: Jurisdiction filter dropdown on browse page
-- [ ] **MULTI-06**: Jurisdiction badge on dataset cards and detail pages
-- [ ] **MULTI-07**: Jurisdiction field in Lunr.js search index
+- [x] **MULTI-05**: Jurisdiction filter dropdown on browse page
+- [x] **MULTI-06**: Jurisdiction badge on dataset cards and detail pages
+- [x] **MULTI-07**: Jurisdiction field in Lunr.js search index
 - [x] **MULTI-08**: Updated CI pipeline with multi-jurisdiction pull
 
 ### Atom Feed
@@ -78,9 +78,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MULTI-02 | Phase 8 | Complete |
 | MULTI-03 | Phase 8 | Complete |
 | MULTI-04 | Phase 8 | Complete |
-| MULTI-05 | Phase 12 | Pending |
-| MULTI-06 | Phase 12 | Pending |
-| MULTI-07 | Phase 12 | Pending |
+| MULTI-05 | Phase 12 | Complete |
+| MULTI-06 | Phase 12 | Complete |
+| MULTI-07 | Phase 12 | Complete |
 | MULTI-08 | Phase 12 | Complete |
 | FEED-01 | Phase 9 | Complete |
 | FEED-02 | Phase 9 | Complete |
