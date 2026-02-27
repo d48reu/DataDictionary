@@ -30,6 +30,12 @@ mdc-encyclopedia = "mdc_encyclopedia.cli:cli"
 [tool.hatch.build.targets.wheel]
 packages = ["src/mdc_encyclopedia"]
 
+[tool.hatch.build.targets.wheel.shared-data]
+
 [tool.hatch.build.targets.wheel.force-include]
 "src/mdc_encyclopedia/site/templates" = "mdc_encyclopedia/site/templates"
 "src/mdc_encyclopedia/site/static" = "mdc_encyclopedia/site/static"
+"src/mdc_encyclopedia/site/__init__.py" = "mdc_encyclopedia/site/__init__.py"
+"src/mdc_encyclopedia/site/generator.py" = "mdc_encyclopedia/site/generator.py"
+"src/mdc_encyclopedia/site/context.py" = "mdc_encyclopedia/site/context.py"
+"src/mdc_encyclopedia/site/search_index.py" = "mdc_encyclopedia/site/search_index.py"
