@@ -48,13 +48,13 @@
          data-publisher="{{ ds.publisher|default('')|lower }}"
          data-tags="{{ ds.tags_text|default('')|lower }}">
         <div class="dataset-grade">
-            <span class="grade {{ ds.grade_class|default('grade-none') }}" title="Grade: {{ ds.grade|default(ds.letter_grade)|default('N/A') }}">{{ ds.grade|default(ds.letter_grade)|default('?') }}</span>
+            <span class="grade {{ ds.grade_css|default('grade-none') }}" title="Grade: {{ ds.grade|default(ds.letter_grade)|default('N/A') }}">{{ ds.grade|default(ds.letter_grade)|default('?') }}</span>
         </div>
         <div class="dataset-info">
             <div class="dataset-title">
                 <a href="/dataset/{{ ds.slug }}/">{{ ds.title }}</a>
             </div>
-            <div class="dataset-desc">{{ ds.ai_description|default(ds.description)|default('No description available')|truncate(120) }}</div>
+            <div class="dataset-desc">{{ (ds.ai_description or ds.description or 'No description available')|truncate(120) }}</div>
             <div class="dataset-meta">
                 {% if ds.department %}
                 <span class="chip">{{ ds.department }}</span>

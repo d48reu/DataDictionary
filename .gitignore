@@ -37,5 +37,5 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Generated site
-site/
+# Generated site (root-level output only)
+/site/
