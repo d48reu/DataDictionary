@@ -26,10 +26,12 @@ from mdc_encyclopedia.db import (
     get_all_datasets_for_audit,
     get_columns_for_dataset,
     get_connection,
+    get_field_eligible_datasets,
     get_recent_changes,
     get_unenriched_datasets,
     init_db,
     insert_enrichment,
+    update_column_ai_descriptions,
     upsert_audit_score,
     upsert_columns,
     upsert_dataset,
@@ -38,6 +40,7 @@ from mdc_encyclopedia.diff.detector import capture_snapshot, compute_changes
 from mdc_encyclopedia.enrichment.client import (
     create_enrichment_client,
     enrich_dataset,
+    enrich_fields,
     estimate_cost,
 )
 from mdc_encyclopedia.enrichment.models import DEFAULT_MODEL
@@ -462,6 +465,183 @@ def enrich(ctx, dry_run, resume, model, limit):
         console.print(fail_table)
 
     # Step 9: Cleanup
+    conn.close()
+
+
+@cli.command("enrich-fields")
+@click.option("--db", default=None, help="Database path")
+@click.option("--dry-run", is_flag=True, help="Show eligible datasets and cost estimate without enriching")
+@click.option("--limit", type=int, default=None, help="Max datasets to enrich")
+@click.option("--resume", is_flag=True, help="Skip already-enriched datasets")
+@click.option("--model", default=DEFAULT_MODEL, show_default=True, help="Claude model for field enrichment")
+@click.pass_context
+def enrich_fields_cmd(ctx, db, dry_run, limit, resume, model):
+    """Enrich dataset columns with AI-generated field-level descriptions."""
+    start_time = time.time()
+    db_path = db or ctx.obj["db_path"]
+    conn = get_connection(db_path)
+
+    # Step 1: Validate API key (unless dry-run)
+    client = None
+    if not dry_run:
+        try:
+            client = create_enrichment_client(model=model)
+        except ValueError as exc:
+            console.print(f"[red]{exc}[/red]")
+            conn.close()
+            raise click.Abort() from exc
+
+    # Step 2: Query eligible datasets (B+ grade with unenriched columns)
+    eligible = get_field_eligible_datasets(conn)
+
+    if not eligible:
+        console.print("[green]All B+ datasets already have field descriptions.[/green]")
+        conn.close()
+        return
+
+    # Step 3: Resume filtering -- track fully-enriched B+ datasets for summary
+    skipped_count = 0
+    if resume:
+        # get_field_eligible_datasets already returns only datasets with unenriched columns,
+        # so count fully-enriched B+ datasets separately for the skip summary
+        all_bp_count = conn.execute(
+            "SELECT COUNT(DISTINCT d.id) FROM datasets d "
+            "JOIN audit_scores a ON d.id = a.dataset_id "
+            "JOIN columns c ON d.id = c.dataset_id "
+            "WHERE a.letter_grade IN ('A', 'B')"
+        ).fetchone()[0]
+        skipped_count = all_bp_count - len(eligible)
+
+    # Step 4: Apply --limit
+    if limit is not None:
+        eligible = eligible[:limit]
+
+    # Step 5: Dry-run mode
+    if dry_run:
+        total_columns = sum(ds["total_columns"] for ds in eligible)
+        # Approximate cost: ~800 input tokens per dataset avg, ~400 output tokens per dataset avg
+        pricing = {
+            "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},
+            "claude-sonnet-4-20250514": {"input": 3.00, "output": 15.00},
+        }
+        model_pricing = pricing.get(model, {"input": 1.00, "output": 5.00})
+        est_input_tokens = 800 * len(eligible)
+        est_output_tokens = 400 * len(eligible)
+        est_cost = (
+            (est_input_tokens / 1_000_000) * model_pricing["input"]
+            + (est_output_tokens / 1_000_000) * model_pricing["output"]
+        )
+
+        console.print(
+            f"Found [bold]{len(eligible)}[/bold] eligible datasets with "
+            f"[bold]{total_columns}[/bold] columns "
+            f"(~${est_cost:.2f} estimated)"
+        )
+
+        ds_table = Table(title="Eligible Datasets for Field Enrichment")
+        ds_table.add_column("#", justify="right")
+        ds_table.add_column("Dataset")
+        ds_table.add_column("Jurisdiction")
+        ds_table.add_column("Grade", justify="center")
+        ds_table.add_column("Columns", justify="right")
+
+        for i, ds in enumerate(eligible, 1):
+            ds_table.add_row(
+                str(i),
+                (ds.get("title") or "Unknown")[:60],
+                ds.get("jurisdiction", ""),
+                ds.get("letter_grade", ""),
+                str(ds.get("total_columns", 0)),
+            )
+
+        console.print(ds_table)
+        conn.close()
+        return
+
+    # Step 6: Enrichment loop
+    enriched_count = 0
+    failed_count = 0
+    total_columns_described = 0
+    failed_datasets: list[tuple[str, str]] = []
+    total = len(eligible)
+
+    for idx, dataset in enumerate(eligible, 1):
+        ds_title = dataset.get("title") or "Unknown"
+        col_count = dataset.get("total_columns", 0)
+        console.print(
+            f"Enriching {ds_title} ({col_count} columns)...",
+            end="",
+        )
+
+        # Get full column data for this dataset
+        columns = get_columns_for_dataset(conn, dataset["id"])
+
+        try:
+            result = enrich_fields(client, model, dataset, columns)
+
+            # Persist AI descriptions
+            desc_map = {
+                fd.column_name: fd.description
+                for fd in result.field_descriptions
+            }
+            updated = update_column_ai_descriptions(conn, dataset["id"], desc_map)
+            conn.commit()
+
+            total_columns_described += len(result.field_descriptions)
+            enriched_count += 1
+            console.print(f" done [{idx}/{total}]")
+
+        except Exception as exc:
+            # Retry once after 2-second delay
+            try:
+                time.sleep(2)
+                result = enrich_fields(client, model, dataset, columns)
+                desc_map = {
+                    fd.column_name: fd.description
+                    for fd in result.field_descriptions
+                }
+                updated = update_column_ai_descriptions(conn, dataset["id"], desc_map)
+                conn.commit()
+
+                total_columns_described += len(result.field_descriptions)
+                enriched_count += 1
+                console.print(f" done (retry) [{idx}/{total}]")
+
+            except Exception as retry_exc:
+                failed_count += 1
+                failed_datasets.append((ds_title, str(retry_exc)))
+                logger.warning("Failed to enrich fields for '%s': %s", ds_title, retry_exc)
+                console.print(f" [red]FAILED[/red] [{idx}/{total}]")
+
+        # Rate limiting delay between datasets
+        time.sleep(1)
+
+    # Step 7: End summary
+    elapsed = time.time() - start_time
+    elapsed_min = int(elapsed // 60)
+    elapsed_sec = int(elapsed % 60)
+    elapsed_str = f"{elapsed_min}m {elapsed_sec}s"
+
+    summary_lines = [
+        f"[bold]Datasets enriched:[/bold] {enriched_count}",
+        f"[bold]Columns described:[/bold] {total_columns_described}",
+    ]
+    if resume:
+        summary_lines.append(f"[bold]Skipped (already enriched):[/bold] {skipped_count}")
+    if failed_count > 0:
+        summary_lines.append(f"[bold red]Failed:[/bold red] {failed_count}")
+    summary_lines.append(f"[bold]Elapsed:[/bold] {elapsed_str}")
+
+    console.print(Panel("\n".join(summary_lines), title="Field Enrichment Summary"))
+
+    if failed_datasets:
+        fail_table = Table(title="Failed Datasets")
+        fail_table.add_column("Dataset")
+        fail_table.add_column("Error")
+        for ds_title, error in failed_datasets:
+            fail_table.add_row(ds_title[:60], error[:80])
+        console.print(fail_table)
+
     conn.close()
 
 
