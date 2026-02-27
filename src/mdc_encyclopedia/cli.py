@@ -652,14 +652,23 @@ def diff(ctx, latest, show_all):
 @cli.command(name="export")
 @click.option("--output", "-o", default="site", help="Output directory for the generated site.")
 @click.option("--base-url", default="", help="Base URL prefix for GitHub Pages (e.g. /DataDictionary).")
+@click.option("--site-url", default=None,
+              help="Full site URL for feed generation (e.g. https://example.github.io/DataDictionary). Required for Atom feed.")
 @click.pass_context
-def export_site(ctx, output, base_url):
+def export_site(ctx, output, base_url, site_url):
     """Generate static HTML site from the catalog database."""
     from mdc_encyclopedia.site.generator import generate_site
 
     db_path = ctx.obj["db_path"]
     # Strip trailing slash from base_url
     base_url = base_url.rstrip("/")
+
+    if not site_url:
+        console.print(
+            "[yellow]Warning: --site-url not provided. "
+            "Atom feed will not be generated. "
+            "Pass --site-url to enable feed generation.[/yellow]"
+        )
 
     with Progress(
         SpinnerColumn(),
@@ -668,7 +677,7 @@ def export_site(ctx, output, base_url):
         console=console,
     ) as progress:
         progress.add_task("Generating site...", total=None)
-        stats = generate_site(db_path, output, base_url=base_url)
+        stats = generate_site(db_path, output, base_url=base_url, site_url=site_url)
 
     table = Table(title="Export Summary")
     table.add_column("Metric", style="bold")
@@ -677,6 +686,8 @@ def export_site(ctx, output, base_url):
     table.add_row("Category pages", str(stats.get("browse_pages", 0)))
     table.add_row("Total pages", str(stats.get("total_pages", 0)))
     table.add_row("Output directory", stats.get("output_dir", output))
+    if stats.get("feed_entries") is not None:
+        table.add_row("Feed entries", str(stats["feed_entries"]))
 
     console.print(table)
     console.print(f"[green]Site generated in {output}/[/green]")

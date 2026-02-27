@@ -19,7 +19,7 @@ from mdc_encyclopedia.site.search_index import build_search_index
 logger = logging.getLogger(__name__)
 
 
-def generate_site(db_path: str, output_dir: str = "site", base_url: str = "") -> dict:
+def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", site_url: str = None) -> dict:
     """Generate the complete static site from the database.
 
     Reads DB via context.py, sets up Jinja2, renders all page templates,
@@ -52,8 +52,9 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "") ->
     env.filters["grade_class"] = _grade_class
     env.filters["slugify"] = _slugify
 
-    # Set base_url as a global so all templates can access it
+    # Set base_url and site_url as globals so all templates can access them
     env.globals["base_url"] = base_url
+    env.globals["site_url"] = site_url
 
     # Create output directory structure
     subdirs = [
@@ -104,6 +105,12 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "") ->
 
     # Copy static assets
     _copy_static_assets(output_dir)
+
+    # Atom feed generation (gated on site_url presence)
+    if site_url:
+        from mdc_encyclopedia.site.feed import generate_atom_feed
+        feed_stats = generate_atom_feed(site_data, output_dir, site_url)
+        stats["feed_entries"] = feed_stats["entry_count"]
 
     total_pages = (
         stats["homepage"]
