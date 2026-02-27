@@ -1,201 +1,339 @@
-# Feature Research
+# Feature Research: v1.1 Regional Expansion
 
-**Domain:** Open data catalog / encyclopedia for government open data portals
-**Researched:** 2026-02-24
-**Confidence:** MEDIUM-HIGH (based on analysis of CKAN, Socrata, Magda, OpenDataSoft, PortalJS, data.gov, data.gov.au, OpenDataPhilly, and academic research on open data portal usability)
+**Domain:** Open data catalog / encyclopedia -- new features for existing product
+**Researched:** 2026-02-26
+**Confidence:** HIGH (features build on verified v1.0 architecture; portal APIs confirmed live; library choices validated)
 
-## Feature Landscape
+---
 
-### Table Stakes (Users Expect These)
+## Context: What Already Exists (v1.0 Shipped)
 
-Features users assume exist. Missing these = product feels incomplete.
+These features are already built and working. The v1.1 features below depend on them.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Full-text search** | Every data catalog has search as its primary discovery mechanism. Magda, CKAN, Socrata, and data.gov all lead with a search bar. Users will not manually browse hundreds of datasets. | MEDIUM | CLIENT-SIDE: Lunr.js or Fuse.js built at export time. Pre-built JSON index. Complexity is in tuning relevance, not infrastructure. |
-| **Browse by category/theme** | Standard in every portal (CKAN groups/organizations, Socrata categories, OpenDataSoft themes). Users expect to narrow by topic like "Transportation" or "Public Safety." | LOW | Derive from metadata or AI enrichment. Static category pages generated at build time. |
-| **Individual dataset detail pages** | Every portal has a dedicated page per dataset showing title, description, publisher, format, license, update frequency, and a link to the source. This is the atomic unit of a data catalog. | MEDIUM | Template-driven. The quality of these pages is where the product lives or dies. Must include all metadata + enrichment + quality score. |
-| **Dataset metadata display** | Users expect to see: title, description, publisher/owner, license, format(s), last updated date, temporal coverage, tags/keywords. Missing metadata = "is this data even real?" | LOW | Pulled directly from Socrata Discovery API and ArcGIS Hub API. Display what's available, flag what's missing. |
-| **Source portal deep links** | Users must be able to click through to the actual data on the original portal (Socrata/ArcGIS). This is a catalog, not a data host. Broken or missing links destroy trust. | LOW | Store and display canonical URLs from API responses. |
-| **Column/field information** | CKAN and Socrata both surface column names and types. Users (especially developers and journalists) need to know what fields exist before deciding to use a dataset. | LOW-MEDIUM | Socrata requires per-dataset API call to `/api/views/{id}.json` for column metadata. ArcGIS field info available via layer definitions. |
-| **Responsive/mobile-friendly layout** | Static sites on GitHub Pages must work on phones. Researchers, journalists, and residents all browse on mobile. Non-responsive = instant bounce. | LOW | Standard responsive CSS. No framework needed — vanilla HTML/CSS handles this. |
-| **Filtering by format/publisher/tag** | Every major portal (CKAN facets, Socrata filters, OpenDataSoft facets) allows narrowing results. Without filters, search alone is insufficient for large catalogs. | MEDIUM | Client-side filtering on static site. Can use URL parameters + JS to filter pre-rendered index. |
-| **Last updated / freshness indicator** | Users need to know if data is current. Stale data without warning erodes trust. Both Socrata and CKAN surface update timestamps prominently. | LOW | Display `metadata_updated_at` from API. Compare against declared update frequency for staleness flag. |
-| **"About" / methodology page** | Users need to understand what this tool is, where data comes from, and that it's not an official county product. Transparency is non-negotiable for civic tech. | LOW | Static page. Disclaimer required per PROJECT.md. |
+| Existing Feature | Relevant to v1.1 Because |
+|------------------|--------------------------|
+| ArcGIS Hub ingestion with field metadata | Multi-jurisdiction reuses this client with different base URLs |
+| SQLite storage with `datasets`, `columns`, `enrichments`, `audit_scores`, `changes` tables | All four features read from or extend this schema |
+| Claude AI enrichment (dataset-level descriptions, use cases, keywords) | Field-level AI descriptions extend the enrichment pipeline |
+| Change detection (added/removed/schema_changed) | RSS feed consumes these records directly |
+| Static site generation (Jinja2 templates, Lunr.js search) | Feed and export files are generated alongside existing site output |
+| CLI tool with `pull`, `enrich`, `audit`, `diff`, `export`, `stats`, `serve` | New commands or options integrate into existing CLI |
+| GitHub Actions weekly pipeline | Must accommodate new jurisdictions and feed generation |
 
-### Differentiators (Competitive Advantage)
+---
 
-Features that set the product apart. Not required, but valued.
+## v1.1 Feature Analysis
+
+### Feature 1: RSS/Atom Feed for Catalog Changes
+
+**What it is:** An XML feed (Atom preferred, RSS 2.0 also generated) that surfaces dataset additions, removals, and schema changes detected during weekly pulls. Subscribers get notified of catalog changes via any feed reader.
+
+**Expected behavior in the wild:**
+- ArcGIS Hub itself offers GeoRSS feeds for catalog search results, but these show the _datasets themselves_ not _changes to the catalog_ -- a critical distinction. Our feed tracks the delta, not the inventory.
+- CKAN exposes `/feeds/dataset.atom` for recently-updated datasets, but not schema-level changes.
+- No open data portal surfaces schema change diffs (columns added/removed) in a feed format. This is a differentiator.
+
+**How it works technically:**
+- The `changes` table already stores `change_type` (added/removed/schema_changed), `details` (JSON with column diffs), and `detected_at` timestamps. This is the feed's data source.
+- The `python-feedgen` library (v1.0.0, stable, last release Dec 2023) generates both Atom and RSS 2.0 XML from the same data. It is the standard Python feed generation library -- no realistic alternatives needed.
+- Feed is generated as static XML files (`feed.atom`, `feed.rss`) during the `export` command, alongside HTML pages.
+- Each change record becomes a feed entry with: title (e.g., "New dataset: Transit Routes"), link (to dataset page or changes page), description (plain-English summary of the change), and timestamp.
+- Feed URL is stable (e.g., `/feed.atom`) so subscribers can bookmark it.
+
+**Dependency on existing:** Direct. Reads from `changes` table via `get_recent_changes()`. No new data collection needed.
+
+| Aspect | Assessment |
+|--------|-----------|
+| Complexity | LOW |
+| New dependencies | `feedgen` (single library, 1.0.0 stable) |
+| Schema changes | None -- reads existing `changes` table |
+| API calls needed | None -- uses already-collected diff data |
+| Risk | Minimal -- well-understood problem, mature library |
+
+---
+
+### Feature 2: Downloadable Enriched Catalog (JSON + CSV)
+
+**What it is:** The full catalog exported as two downloadable files -- a JSON file and a CSV file -- containing all dataset metadata plus AI enrichment data (descriptions, use cases, keywords, department, civic relevance) and quality scores. Available as static files linked from the site.
+
+**Expected behavior in the wild:**
+- CKAN exposes a `data.json` file at the catalog root following the DCAT-US schema (required for federal data.gov harvesting). This is the industry standard for catalog exports.
+- Socrata/Tyler portals expose the Socrata Discovery API for bulk metadata access but not a single downloadable file.
+- ArcGIS Hub offers DCAT feeds for catalog federation, but the output is raw metadata without enrichment.
+- No existing portal exports _enriched_ metadata (AI descriptions + quality scores). This is a differentiator.
+
+**Two formats, different audiences:**
+- **JSON:** Developer-friendly. Structured, nested. Can include arrays (use_cases, keywords, column lists). Follows DCAT-US field naming conventions where applicable for interoperability, but includes custom enrichment fields.
+- **CSV:** Analyst-friendly. Flat, one row per dataset. Arrays are pipe-delimited (e.g., `keyword1|keyword2`). Columns are serialized as a count rather than nested objects. Importable into Excel/Google Sheets.
+
+**DCAT-US v1.1 alignment (for JSON export):**
+The JSON export should include DCAT-US required fields where data exists, making the catalog harvestable by data.gov or other aggregators:
+
+| DCAT-US Field | Our Source | Required? |
+|---------------|------------|-----------|
+| `title` | `datasets.title` | Yes |
+| `description` | `enrichments.description` (AI) or `datasets.description` (original) | Yes |
+| `keyword` | `enrichments.keywords` (AI-enriched) | Yes |
+| `modified` | `datasets.updated_at` | Yes |
+| `publisher` | `datasets.publisher` | Yes |
+| `identifier` | `datasets.id` | Yes |
+| `accessLevel` | "public" (all datasets are open data) | Yes |
+| `contactPoint` | Not available -- omit | Required but unavailable |
+| `distribution` | `datasets.download_url`, `datasets.api_endpoint` | Required-if |
+| `license` | `datasets.license` | Required-if |
+| `spatial` | `datasets.bbox` | Required-if |
+
+Custom enrichment fields (prefixed `mdc:` or nested under `enrichment`) include: `ai_description`, `use_cases`, `civic_relevance`, `department`, `update_frequency`, `quality_score`, `letter_grade`.
+
+**Dependency on existing:** Direct. Reads from `datasets` + `enrichments` + `audit_scores` tables via existing queries in `context.py`. The `build_site_data()` function already joins all three tables.
+
+| Aspect | Assessment |
+|--------|-----------|
+| Complexity | LOW |
+| New dependencies | None -- `json` and `csv` are stdlib |
+| Schema changes | None -- reads existing tables |
+| API calls needed | None -- uses already-collected data |
+| Risk | Minimal -- straightforward serialization |
+
+---
+
+### Feature 3: AI Field-Level Descriptions (B+ Datasets)
+
+**What it is:** Claude-generated plain-English descriptions for individual columns/fields within datasets that already have high quality scores (B+ grade or above). Transforms cryptic field names like `OBJECTID`, `Shape__Length`, `ZONING_DESC` into human-readable explanations.
+
+**Expected behavior in the wild:**
+- Enterprise data catalogs (DataHub, Atlan, OpenMetadata) use LLMs to generate column descriptions at scale. This is an established pattern in enterprise data management but has not been applied to civic open data portals.
+- Research confirms column descriptions should be under 20 words for readability and downstream usefulness. Longer descriptions hurt more than they help.
+- Context matters: the same column name means different things in different datasets. "AGE" in a `Customer` table vs a `Building` table. The prompt must include the dataset context (title, description, other columns) when describing each field.
+- Best practice from Grab's engineering team: batch related columns together in a single LLM call rather than one call per column. This reduces cost and improves contextual accuracy.
+
+**Why B+ datasets only:**
+- B+ datasets (composite_score >= 0.8) have sufficient metadata for the AI to produce accurate descriptions: they have documented columns, descriptions, and recent updates.
+- Lower-quality datasets may have garbage column names, no context, or stale metadata -- AI descriptions would be unreliable.
+- This keeps API costs controlled. With 570+ datasets and potentially 20-50 columns each, enriching all columns would cost 10x+ the dataset-level enrichment.
+- Based on existing audit data, roughly 20-30% of datasets score B+ or above, so this targets ~115-170 datasets.
+
+**How it works technically:**
+- New table `column_enrichments` (or extend existing `columns` table with `ai_description` and `enriched_at` columns).
+- New enrichment prompt that includes dataset context + all column names/types, asks for a short (10-20 word) plain-English description per column.
+- Uses structured output (Pydantic model) like existing dataset enrichment.
+- Single API call per dataset (all columns described at once), not per column.
+- Only targets datasets where `audit_scores.letter_grade IN ('A', 'B')` AND `columns` table has entries.
+- Display on dataset detail page alongside existing column table (currently shows name + type + raw description).
+
+**Cost estimation:**
+- ~150 datasets at B+ or above with columns
+- ~30 columns average per dataset = 4,500 column descriptions
+- One API call per dataset (all columns in one prompt) = ~150 API calls
+- At Haiku pricing ($1/MTok input, $5/MTok output): estimated $0.50-$1.50 total
+- Well within the existing $5 auto-proceed threshold
+
+**Dependency on existing:** Extends the enrichment pipeline. Requires `columns` table (populated during pull), `audit_scores` table (to filter B+ datasets), and the Anthropic client infrastructure.
+
+| Aspect | Assessment |
+|--------|-----------|
+| Complexity | MEDIUM |
+| New dependencies | None -- uses existing Anthropic SDK and Pydantic |
+| Schema changes | YES -- new `column_enrichments` table or new columns on `columns` table (schema V3 migration) |
+| API calls needed | ~150 Anthropic API calls (one per qualifying dataset) |
+| Risk | MEDIUM -- prompt engineering needed to handle diverse column types; cost must be estimated accurately |
+
+---
+
+### Feature 4: Multi-Jurisdiction Support (Broward County + City of Miami)
+
+**What it is:** Extending the encyclopedia to pull, enrich, audit, and display datasets from two additional jurisdictions alongside Miami-Dade County. All three jurisdictions appear in a unified catalog with jurisdiction filtering.
+
+**Portal landscape (verified live, 2026-02-26):**
+
+| Jurisdiction | Portal | URL | Platform | API | Datasets |
+|-------------|--------|-----|----------|-----|----------|
+| Miami-Dade County | Open Data Hub | `opendata.miamidade.gov` | ArcGIS Hub | `/api/search/v1` | ~570 |
+| Broward County | GeoHub | `geohub-bcgis.opendata.arcgis.com` | ArcGIS Hub | `/api/search/v1` | ~83 |
+| City of Miami (GIS) | Open Data GIS | `datahub-miamigis.opendata.arcgis.com` | ArcGIS Hub | `/api/search/v1` | ~83 |
+| City of Miami (non-GIS) | Open Data Portal | `data.miamigov.com` | Socrata/Tyler | SODA API | Unknown |
+
+**Critical finding:** All three primary portals (Miami-Dade, Broward, City of Miami GIS) use the same ArcGIS Hub platform with the identical `/api/search/v1` search endpoint. The existing `hub_client.py` can be reused with zero changes to the API interaction logic -- only the base URL needs to be configurable.
+
+**The City of Miami Socrata complication:** City of Miami also has a Socrata/Tyler portal at `data.miamigov.com` with non-GIS datasets (budget, permits, etc.). This uses a completely different API (Socrata Discovery API / SODA). Recommendation: **defer Socrata ingestion** to v1.2. The three ArcGIS Hub portals give plenty of coverage for v1.1 without adding a second API client.
+
+**Architecture implications:**
+
+1. **Hub client parameterization:** Change `HUB_BASE_URL` from a constant to a configuration parameter. The `create_client()` function takes a `base_url` argument.
+
+2. **Dataset `source_portal` field:** Already exists in the schema (`datasets.source_portal TEXT NOT NULL`). Currently set to "ArcGIS Hub" for all records. For multi-jurisdiction, this should be the jurisdiction name (e.g., "Miami-Dade County", "Broward County", "City of Miami").
+
+3. **Jurisdiction configuration:** A config dict or YAML file mapping jurisdiction names to portal URLs:
+   ```python
+   JURISDICTIONS = {
+       "Miami-Dade County": "https://opendata.miamidade.gov",
+       "Broward County": "https://geohub-bcgis.opendata.arcgis.com",
+       "City of Miami": "https://datahub-miamigis.opendata.arcgis.com",
+   }
+   ```
+
+4. **Pull command changes:** The `pull` command iterates over all configured jurisdictions (or accepts `--jurisdiction` flag to pull one). Each jurisdiction's datasets are stored with the appropriate `source_portal` value.
+
+5. **Deduplication across jurisdictions:** Possible but unlikely that the same dataset appears on multiple ArcGIS Hub portals with different IDs. The existing `id` field (ArcGIS-assigned UUID) is globally unique. Cross-jurisdiction dedup is a non-issue for ArcGIS Hub.
+
+6. **Site UI changes:** Jurisdiction filter on browse page (similar to existing format/publisher/tag filters). Jurisdiction badge on dataset cards and detail pages. Stats breakdown by jurisdiction on homepage.
+
+7. **Rate limiting:** Three portals at 1 req/s each. Pulling sequentially means 3x longer pull times. With Broward (83 datasets) and City of Miami (83 datasets) being much smaller than Miami-Dade (570), the total pull time increases by roughly 30% -- manageable within GitHub Actions timeout.
+
+8. **Enrichment scope:** New datasets from new jurisdictions need enrichment. The existing `get_unenriched_datasets()` query works unchanged -- it returns any dataset without an enrichment record regardless of source_portal. The enrichment prompt currently references "Miami-Dade County" explicitly and must be generalized.
+
+9. **Search index:** Lunr.js index builds from all datasets regardless of source_portal. Jurisdiction becomes a searchable/filterable field.
+
+**Dependency on existing:** High reuse. The hub_client, normalizer, field_fetcher, enrichment pipeline, audit scorer, diff detector, and site generator all work with minimal changes. The main work is parameterization and UI updates.
+
+| Aspect | Assessment |
+|--------|-----------|
+| Complexity | MEDIUM-HIGH |
+| New dependencies | None |
+| Schema changes | Minimal -- `source_portal` already exists; may add `jurisdiction` as explicit field |
+| API calls needed | ~166 additional ArcGIS Hub API calls (83+83 datasets from two new portals) |
+| Risk | MEDIUM -- enrichment prompt must be jurisdiction-aware; pull time increases; CI pipeline must handle three sequential pulls |
+
+---
+
+## Table Stakes for v1.1
+
+Features that users of the _existing_ product will expect once v1.1 ships. Missing these makes the upgrade feel incomplete.
+
+| Feature | Why Expected | Complexity | Depends On |
+|---------|--------------|------------|------------|
+| **Jurisdiction filter on browse page** | If catalog has datasets from 3 jurisdictions, users must be able to filter by jurisdiction. Without it, Broward datasets mixed into Miami-Dade results confuse users. | LOW | Multi-jurisdiction support |
+| **Jurisdiction badge on dataset cards** | Users need to see at a glance which government a dataset belongs to. Otherwise "Building Permits" is ambiguous -- Miami-Dade's or City of Miami's? | LOW | Multi-jurisdiction support |
+| **Feed autodiscovery link in HTML head** | Standard `<link rel="alternate" type="application/atom+xml">` tag so browsers and feed readers auto-detect the feed. Without it, users must manually find the feed URL. | LOW | RSS/Atom feed |
+| **Feed linked from site navigation** | Prominent link to feed in site header/footer. RSS icon is universally recognized. | LOW | RSS/Atom feed |
+| **Download links on about page or data page** | JSON and CSV exports must be discoverable. A "Download Catalog" section with format options. | LOW | Downloadable catalog |
+| **Field descriptions visible on dataset page** | AI column descriptions must appear inline in the existing column table on dataset detail pages. Users should not have to navigate elsewhere. | LOW | AI field descriptions |
+| **Enrichment cost estimate for new jurisdictions** | `--dry-run` must show costs for new jurisdiction datasets before spending API credits. Already works, but must be verified with multi-jurisdiction datasets. | LOW | Multi-jurisdiction + existing enrichment |
+
+---
+
+## Differentiators for v1.1
+
+Features that set v1.1 apart. These create value beyond what any existing open data portal offers.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **AI-generated plain-English descriptions** | Most open data portals have cryptic, jargon-filled, or outright missing descriptions. Claude-generated summaries in plain language is the #1 differentiator. No existing portal does this well. OpenDataSoft has processors but not LLM-powered narrative descriptions. Magda has metadata enrichment but not plain-English rewriting. | MEDIUM | Requires Anthropic API. Cost-controlled via `--dry-run` and `--resume`. One-time per dataset unless re-run. Core value prop of the project. |
-| **AI-generated use cases ("Why you'd care")** | Telling a resident or journalist *why* a dataset matters — not just what it contains. "This dataset could help you find out which neighborhoods have the most code violations." No existing portal does this. | MEDIUM | Bundled with the enrichment prompt. Minimal marginal cost above descriptions. Transforms catalog from reference tool to actionable guide. |
-| **Automated data quality scoring** | Toronto's Open Data portal pioneered a public quality score. Most portals lack this. A computed score (metadata completeness, freshness, column documentation) makes the catalog a quality accountability tool. | MEDIUM | Composite score from: % metadata fields filled, days since last update vs declared frequency, column count, description length. Algorithm is simple; the value is in surfacing it. |
-| **"What Changed" diff page** | No consumer-facing open data portal surfaces a changelog of catalog-level changes (new datasets added, datasets removed, schema changes). This turns a static catalog into a living accountability tool. | MEDIUM | Requires storing previous pull state and diffing. SQLite makes this straightforward. Weekly cadence from GitHub Actions. |
-| **Related datasets** | CKAN has basic "related items" but it's manually curated. AI-inferred relationships ("If you're looking at Building Permits, you might also want Code Violations") add discovery value. | MEDIUM | Can be tag/category based (simple) or AI-inferred (richer). Start with tag overlap, upgrade to AI later. |
-| **Civic relevance scoring** | Beyond data quality — how relevant is this dataset to residents? A dataset about internal IT asset inventory scores low; a dataset about transit routes scores high. No portal does this. | LOW-MEDIUM | AI-generated during enrichment. Simple HIGH/MEDIUM/LOW classification. Enables "Most Relevant to Residents" browsing. |
-| **Cross-portal unified view** | Miami-Dade has TWO portals (Socrata + ArcGIS Hub). No existing tool unifies them into a single searchable catalog. Residents shouldn't need to know which portal hosts what. | MEDIUM | Core architecture decision. SQLite normalizes both sources. Deduplication needed for datasets that appear on both. |
-| **Department attribution** | Many datasets lack clear owning department. AI-inferred department ("Likely: Department of Transportation and Public Works") makes the catalog navigable by government structure. | LOW | AI-generated during enrichment. Enables "Browse by Department" which no Miami-Dade portal currently offers. |
-| **Data quality report page** | An aggregate view: "X% of datasets have descriptions. Y datasets haven't been updated in over a year. Z datasets have zero documented columns." Accountability dashboard for the portal itself. | MEDIUM | Computed from audit results. Static HTML page with aggregate stats. Unique among civic tools. |
-| **Search keyword enrichment** | AI generates "keywords a resident would search for" — mapping government jargon to plain language. "Right of Way Permits" gets keywords like "sidewalk construction, road work, utility dig." | LOW | Part of enrichment prompt. Feeds into search index for dramatically better recall on non-technical queries. |
+| **Schema change diff in RSS feed** | No open data portal surfaces column additions/removals in a subscribable feed. Developers and journalists can track when datasets gain or lose fields. | LOW | Unique in the open data space. Builds on existing diff detection. |
+| **AI-enriched catalog export** | Downloadable JSON/CSV with AI descriptions, use cases, quality scores -- not just raw metadata. Developers get a richer dataset than the source portal provides. | LOW | No portal offers enriched exports. DCAT-US alignment makes it harvestable. |
+| **Field-level plain-English descriptions** | Column names like `ZONING_DESC` become "Zoning designation code describing the allowed land use for a parcel." Makes datasets accessible to non-technical users at the field level. | MEDIUM | Enterprise data catalogs do this internally; no public open data portal does. |
+| **Tri-county unified catalog** | Searching "building permits" returns results from Miami-Dade, Broward, and City of Miami in one place. No existing tool unifies South Florida open data. | MEDIUM-HIGH | Regional view that no government portal provides. Journalists and researchers need cross-jurisdiction comparison. |
+| **Per-jurisdiction quality comparison** | Quality scores across jurisdictions enable comparison: "Broward's data quality averages B while City of Miami averages C." Accountability extends beyond one government. | LOW | Falls out naturally from applying existing audit to new jurisdictions. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+---
 
-Features that seem good but create problems.
+## Anti-Features for v1.1
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Data preview (showing actual rows)** | "Let me see the data before I download it." Socrata and CKAN both have this. | Requires per-dataset API calls at build time (hundreds/thousands of extra requests). Dramatically increases build time, storage, and rate-limit risk. Breaks the "catalog, not warehouse" boundary. Data previews go stale faster than metadata. | Deep link to source portal where preview already exists. Dataset page says "View data on [Socrata/ArcGIS]" with a prominent button. |
-| **Built-in data visualization (charts/maps)** | "Show me a chart of this data." OpenDataSoft and Socrata embed viz tools. | Massive scope expansion. Requires understanding each dataset's schema to render appropriate visualizations. Maintenance nightmare as schemas change. Static site can't run dynamic viz well. | Link to source portal's visualization tools. Mention in "Use Cases" what kind of analysis is possible. |
-| **User accounts / saved searches** | "Let me bookmark datasets and get alerts." | Requires authentication infrastructure, database for user state, session management — all antithetical to a static site on GitHub Pages. Adds GDPR/privacy concerns. | Browser bookmarks work. "What Changed" page serves the alerting use case for the most important changes. |
-| **API for programmatic access** | "Let me query the catalog via API." | Building and hosting an API means running a server, which conflicts with the static-site-on-GitHub-Pages architecture. Ongoing maintenance burden. | Export the full catalog as downloadable JSON. Developers can consume the static JSON file directly. The SQLite database is also available for download. |
-| **User-submitted dataset requests** | "I want to request a dataset the county should publish." | Requires moderation, backend for submissions, and creates expectations that requests will be fulfilled — which this project has no authority to do. | Link to the county's official feedback channels. Static page explaining how to request data from Miami-Dade directly. |
-| **Real-time data freshness checking** | "Check if dataset is currently up on the portal." | Requires runtime API calls from the browser, which means CORS issues, rate limiting from the user's browser, and a fundamentally different architecture. | Weekly pull captures freshness. Staleness flags based on declared update frequency vs actual last update. Good enough for a catalog. |
-| **Notifications (email/Slack)** | "Alert me when a dataset changes." | Requires email/notification infrastructure, user accounts, and ongoing compute. Way beyond static site scope. | "What Changed" page serves as a manual check. RSS feed of changes is a v2 low-lift alternative. |
-| **Multi-jurisdiction support** | "Add Broward County, City of Miami, etc." | Scope creep. Each jurisdiction has different APIs, metadata schemas, and quality levels. Generalizing before nailing one jurisdiction creates a mediocre product for everyone. | Build for Miami-Dade only. Architecture should be extensible (config-driven portal list) but don't build multi-tenant now. |
-| **Comment/discussion on datasets** | "Let users discuss datasets." | Requires moderation, backend, user accounts. Creates liability. Comments go stale and become noise. | Link to relevant civic tech community channels (Code for Miami, etc.) for discussion. |
+Features to explicitly NOT build in this milestone.
 
-## Feature Dependencies
+| Anti-Feature | Why Tempting | Why Avoid | What to Do Instead |
+|--------------|-------------|-----------|-------------------|
+| **Socrata ingestion for City of Miami** | City of Miami has a Socrata portal (data.miamigov.com) with non-GIS datasets. Feels incomplete to skip it. | Adds a completely different API client (SODA), different metadata schema, different rate limiting, and cross-platform dedup complexity. Doubles the ingestion code surface for ~50 additional datasets. | Defer to v1.2. Ship v1.1 with ArcGIS Hub only for all three jurisdictions. Note on the site that non-GIS City of Miami data is coming soon. |
+| **DCAT-US v3.0 compliance** | DCAT-US 3.0 was recently drafted. Future-proofing feels smart. | v3.0 is not yet finalized or required. v1.1 alignment is the current standard for data.gov harvesting. Building for a draft spec risks rework. | Use DCAT-US v1.1 field names in JSON export. Migrate to v3.0 when finalized. |
+| **Full DCAT-AP / JSON-LD export** | Linked Data export would make the catalog interoperable with European data portals and semantic web tools. | Massive scope expansion for near-zero user value. None of the target audience (Miami residents, journalists, local developers) uses JSON-LD or RDF. | Plain JSON and CSV are sufficient. Add a `conformsTo` field pointing to DCAT-US v1.1 for discoverability. |
+| **Feed filtering / per-jurisdiction feeds** | Users might want a feed for only Broward changes, not all three jurisdictions. | Multiplies feed files (3 jurisdictions x 2 formats = 6 files instead of 2). Adds complexity for a feature that may have single-digit subscribers initially. | Single feed with all jurisdictions. Each entry includes jurisdiction in title. Revisit per-jurisdiction feeds if demand emerges. |
+| **Real-time feed updates** | Push notifications or WebSub/PubSubHubbub for instant feed delivery. | Static site cannot push. Weekly pull cadence means feed updates weekly anyway. Real-time infra is antithetical to the architecture. | Weekly feed updates match the weekly pull cadence. This is appropriate for a catalog that changes slowly. |
+| **Enriching all dataset columns regardless of quality** | More coverage sounds better. | Low-quality datasets have cryptic, undocumented columns. AI descriptions would be unreliable (garbage in, garbage out). Cost would be 5-10x higher. | B+ threshold ensures AI has enough context to produce accurate descriptions. Expand threshold downward in v1.2 once prompt quality is validated. |
+| **CLI command for feed subscription management** | "Subscribe to the feed from the CLI." | The CLI generates static files. Subscription management implies a server or notification system. Users subscribe via their own feed reader. | Document the feed URL in the CLI output after `export` and on the site's about page. |
+| **Jurisdiction-specific enrichment prompts** | Different system prompts for different jurisdictions. "You are a Broward County data librarian..." | Unnecessary complexity. The enrichment prompt can be jurisdiction-aware by receiving the jurisdiction name as a variable. The core task (describe this dataset in plain English) is the same. | Single prompt template with a `{jurisdiction}` variable. "You are a {jurisdiction} data librarian helping residents understand open datasets." |
+
+---
+
+## Feature Dependencies (v1.1)
 
 ```
-[Metadata Pull (Socrata + ArcGIS)]
-    ├──requires──> [SQLite Storage Schema]
-    │                  └──enables──> [AI Enrichment]
-    │                  │                 ├──enables──> [Plain-English Descriptions]
-    │                  │                 ├──enables──> [Use Cases]
-    │                  │                 ├──enables──> [Department Attribution]
-    │                  │                 ├──enables──> [Civic Relevance Score]
-    │                  │                 └──enables──> [Search Keyword Enrichment]
-    │                  └──enables──> [Quality Audit]
-    │                                    ├──enables──> [Quality Scores per Dataset]
-    │                                    └──enables──> [Data Quality Report Page]
-    ├──enables──> [Diff Detection]
-    │                  └──enables──> ["What Changed" Page]
-    └──enables──> [Static Site Export]
-                       ├──requires──> [Search Index Build (Lunr/Fuse)]
-                       ├──requires──> [Dataset Detail Page Templates]
-                       ├──requires──> [Category Browse Pages]
-                       ├──requires──> [Filter UI]
-                       └──requires──> [About / Disclaimer Page]
+[Multi-Jurisdiction Support]
+    ├──requires──> [Hub Client Parameterization]
+    │                  └── hub_client.py: HUB_BASE_URL -> configurable parameter
+    ├──requires──> [Jurisdiction Config]
+    │                  └── jurisdictions dict/YAML with name -> URL mapping
+    ├──requires──> [Pull Command Iteration]
+    │                  └── Loop over jurisdictions or accept --jurisdiction flag
+    ├──requires──> [Enrichment Prompt Generalization]
+    │                  └── Replace "Miami-Dade County" with {jurisdiction} variable
+    ├──enables──> [Per-Jurisdiction Stats on Homepage]
+    ├──enables──> [Jurisdiction Filter on Browse Page]
+    ├──enables──> [Jurisdiction Badge on Dataset Cards]
+    └──enables──> [Cross-Jurisdiction Quality Comparison]
 
-[Search Keyword Enrichment] ──enhances──> [Full-text Search Quality]
+[RSS/Atom Feed]
+    ├──requires──> [changes table data] (already exists)
+    ├──requires──> [feedgen library] (new dependency)
+    ├──requires──> [Feed generation in export command]
+    │                  └── Generate feed.atom + feed.rss alongside HTML
+    ├──enables──> [Feed autodiscovery in HTML <head>]
+    └──enables──> [Feed link in site navigation]
 
-[Related Datasets] ──requires──> [Category/Tag Data from Metadata Pull]
-                   ──enhanced-by──> [AI Enrichment] (optional upgrade)
+[Downloadable Enriched Catalog]
+    ├──requires──> [datasets + enrichments + audit_scores data] (already exists)
+    ├──requires──> [JSON serialization logic] (stdlib)
+    ├──requires──> [CSV serialization logic] (stdlib)
+    ├──requires──> [Export generation in export command]
+    │                  └── Generate catalog.json + catalog.csv alongside HTML
+    └──enables──> [Download links on site]
+
+[AI Field-Level Descriptions]
+    ├──requires──> [columns table data] (already exists)
+    ├──requires──> [audit_scores data for B+ filtering] (already exists)
+    ├──requires──> [Schema V3 migration] (new column_enrichments table or columns extension)
+    ├──requires──> [New Pydantic model for field enrichment output]
+    ├──requires──> [New enrichment prompt for column descriptions]
+    ├──requires──> [New CLI command or --fields flag on enrich command]
+    └──enables──> [Enhanced dataset detail pages with field descriptions]
 ```
 
-### Dependency Notes
+**Critical path:** Multi-jurisdiction should be built BEFORE RSS feed and catalog export, because feeds and exports should include all jurisdictions from the start. Field-level AI descriptions are independent and can be built in parallel.
 
-- **AI Enrichment requires SQLite Storage:** Enrichment reads raw metadata from the database and writes enrichment results back. Must have schema and data before enrichment runs.
-- **Quality Audit requires SQLite Storage:** Audit queries metadata fields to compute completeness, freshness, and coverage scores.
-- **Diff Detection requires previous pull state:** The diff compares current pull against stored previous state. First run has no diff. Requires at least two pulls.
-- **Static Site Export requires Search Index + Templates:** Export generates both HTML pages and the JSON search index consumed by Lunr.js/Fuse.js.
-- **Search Keyword Enrichment enhances Full-text Search:** Without enriched keywords, search only hits raw metadata terms. With them, residents searching "road construction" find "Right of Way Permits."
-- **Related Datasets can work without AI:** Tag/category overlap is a simple first pass. AI enrichment can upgrade to semantic similarity later.
+**Recommended build order:**
+1. Multi-jurisdiction support (unlocks full catalog scope)
+2. RSS/Atom feed (consumes changes from all jurisdictions)
+3. Downloadable catalog export (exports full multi-jurisdiction catalog)
+4. AI field-level descriptions (independent, can be last)
 
-## MVP Definition
+---
 
-### Launch With (v1)
+## Complexity and Effort Summary
 
-Minimum viable product — what's needed to validate the core value proposition: "Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident."
+| Feature | Complexity | Estimated Effort | New Dependencies | Schema Changes | API Cost |
+|---------|-----------|-----------------|-----------------|---------------|----------|
+| RSS/Atom Feed | LOW | 1-2 days | `feedgen` | None | $0 |
+| Downloadable Catalog (JSON+CSV) | LOW | 1-2 days | None (stdlib) | None | $0 |
+| AI Field Descriptions | MEDIUM | 2-3 days | None | V3 migration | ~$1 |
+| Multi-Jurisdiction | MEDIUM-HIGH | 3-5 days | None | Minimal | ~$0.50 (enrichment for ~166 new datasets) |
 
-- [ ] **Metadata pull from both portals** — Without data, nothing else works
-- [ ] **SQLite storage** — Foundation for everything downstream
-- [ ] **AI enrichment (descriptions + use cases + keywords)** — This IS the product. Without it, this is just a worse version of the existing portals
-- [ ] **Quality audit** — Low marginal cost, high accountability value
-- [ ] **Static site with search + browse + dataset pages** — Delivery mechanism for the enriched catalog
-- [ ] **GitHub Pages deployment** — Free, automated, zero-maintenance hosting
-- [ ] **CLI tool (`mdc-encyclopedia`)** — Developer interface for all operations
+**Total estimated effort:** 7-12 days
+**Total estimated API cost:** ~$1.50
 
-### Add After Validation (v1.x)
-
-Features to add once core is working and feedback is gathered.
-
-- [ ] **Diff detection + "What Changed" page** — Add after second weekly pull establishes baseline for comparison
-- [ ] **Related datasets** — Add once category/tag data quality is understood from v1 audit
-- [ ] **Civic relevance scoring** — Add once enrichment quality is validated; refine prompt based on v1 results
-- [ ] **Department attribution browsing** — Add once AI-inferred departments are spot-checked for accuracy
-- [ ] **Data quality report page** — Add once audit methodology is validated against manual review
-
-### Future Consideration (v2+)
-
-Features to defer until product-market fit is established.
-
-- [ ] **RSS feed for changes** — Low-effort alerting without full notification infrastructure
-- [ ] **Downloadable catalog JSON/CSV** — For developers who want bulk access
-- [ ] **Embeddable widgets** — Let other civic sites embed dataset cards
-- [ ] **Multi-jurisdiction support** — Only after Miami-Dade is solid and there's demand
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Full-text search | HIGH | MEDIUM | P1 |
-| Browse by category | HIGH | LOW | P1 |
-| Dataset detail pages | HIGH | MEDIUM | P1 |
-| Metadata display | HIGH | LOW | P1 |
-| Source portal links | HIGH | LOW | P1 |
-| Column/field info | MEDIUM | LOW-MEDIUM | P1 |
-| AI plain-English descriptions | HIGH | MEDIUM | P1 |
-| AI use cases | HIGH | LOW (bundled w/ descriptions) | P1 |
-| Search keyword enrichment | HIGH | LOW (bundled w/ enrichment) | P1 |
-| Quality scoring | MEDIUM | MEDIUM | P1 |
-| Responsive layout | MEDIUM | LOW | P1 |
-| Freshness indicator | MEDIUM | LOW | P1 |
-| About/disclaimer page | MEDIUM | LOW | P1 |
-| Filtering (format/publisher/tag) | MEDIUM | MEDIUM | P1 |
-| Cross-portal unified view | HIGH | MEDIUM | P1 |
-| Diff detection / "What Changed" | MEDIUM | MEDIUM | P2 |
-| Related datasets | MEDIUM | MEDIUM | P2 |
-| Department attribution browse | MEDIUM | LOW | P2 |
-| Civic relevance scoring | MEDIUM | LOW | P2 |
-| Data quality report page | MEDIUM | MEDIUM | P2 |
-| RSS feed for changes | LOW | LOW | P3 |
-| Downloadable catalog export | LOW | LOW | P3 |
-| Embeddable widgets | LOW | MEDIUM | P3 |
-
-**Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
-
-## Competitor Feature Analysis
-
-| Feature | CKAN (data.gov) | Socrata (Miami-Dade) | ArcGIS Hub (Miami-Dade) | Magda (data.gov.au) | OpenDataSoft | **Our Approach** |
-|---------|-----------------|---------------------|------------------------|--------------------|--------------|--------------------|
-| Search | Solr-powered, faceted | Keyword + filters | Keyword + spatial | Elasticsearch, synonym-aware | AI-powered NLP | Client-side Lunr.js/Fuse with AI-enriched keywords |
-| Dataset pages | Basic metadata + preview | Rich metadata + viz | Map-focused + metadata | Clean metadata layout | Rich metadata + viz | Metadata + AI enrichment + quality score + use cases |
-| Plain-English descriptions | No (raw metadata only) | No (publisher-written) | No (publisher-written) | No (auto-derived partial) | No (processor-based) | **YES — Claude-generated, resident-focused** |
-| Data quality score | No | No | No | Planned (roadmap) | No public score | **YES — Automated composite score** |
-| Change tracking | Revision history per dataset | Activity log (admin only) | No | No public changelog | No public changelog | **YES — Public "What Changed" page** |
-| Cross-portal | Single source | Single source | Single source | Federated harvesting | Single or hub | **YES — Socrata + ArcGIS unified** |
-| Civic use cases | No | No | No | No | No | **YES — AI-generated per dataset** |
-| Column documentation | Available via API | Available via API | Available via layer def | Available | Available | Display prominently on dataset page |
-| Department browsing | Organization pages | No (tags only) | No | Organization pages | Producer facet | **AI-inferred department + browse pages** |
-| Resident-friendly language | No (technical audience) | Minimal | Minimal | No (technical audience) | Better than most | **Core mission — every element in plain English** |
+---
 
 ## Sources
 
-- CKAN features: https://ckan.org/features/search, https://ckan.org/features/metadata/, https://ckan.org/features/api
-- Socrata catalog UX: https://support.socrata.com/hc/en-us/articles/202949778-Navigating-the-dataset-catalog
-- Magda (data.gov.au): https://magda.io/, https://github.com/magda-io/magda, https://atlan.com/magda-data-catalog/
-- PortalJS / Datopian: https://www.portaljs.com/, https://github.com/datopian/portaljs
-- OpenDataSoft features: https://opendatasoft.com/en/data-catalog-2, https://www.opendatasoft.com/en/processing-enriching/
-- Open data portal usability research: https://www.sciencedirect.com/science/article/abs/pii/S0736585320301982, https://www.sciencedirect.com/science/article/abs/pii/S0736585325000462
-- Data quality scoring (Toronto): https://medium.com/open-data-toronto/towards-a-data-quality-score-in-open-data-part-1-525e59f729e9, https://open.toronto.ca/towards-an-updated-data-quality-score-in-open-data/
-- Metadata quality frameworks: https://dl.acm.org/doi/10.1145/2964909
-- Portal metadata enrichment: https://www.portaljs.com/blog/how-rich-metadata-powers-data-discovery-in-modern-data-catalogs
-- CKAN vs Socrata comparison: https://publicsectornetwork.com/insight/government-open-data-portals-a-look-at-ckan-and-socrata
-- Open data portal criticism: https://civic.io/2015/04/01/i-hate-open-data-portals/
-- AI metadata enrichment: https://datahub.com/blog/ai-assisted-data-catalogs-an-llm-powered-by-knowledge-graphs-for-metadata-discovery/
-- LLM dataset enrichment research: https://link.springer.com/chapter/10.1007/978-3-032-08366-1_5
-- AWS Glue AI enrichment: https://aws.amazon.com/blogs/big-data/enrich-your-aws-glue-data-catalog-with-generative-ai-metadata-using-amazon-bedrock/
-- datHere 2026 open data trends: https://dathere.com/2026/01/2025-the-year-opening-data-was-great-again/
-- Gartner government open data platforms: https://www.gartner.com/reviews/market/government-open-data-management-platforms
-- World Bank Open Data Toolkit: https://opendatatoolkit.worldbank.org/en/data/opendatatoolkit/technology
-- Awesome data catalogs list: https://github.com/opendatadiscovery/awesome-data-catalogs
+### RSS/Atom Feed
+- [python-feedgen library (v1.0.0)](https://github.com/lkiesow/python-feedgen) -- HIGH confidence, verified on PyPI
+- [python-feedgen documentation](https://feedgen.kiesow.be/) -- Official docs, API reference
+- [ArcGIS Hub catalog feeds (GeoRSS, DCAT)](https://www.esri.com/arcgis-blog/products/arcgis-hub/data-management/arcgis-hub-catalog-feeds-support-dcat-rss-ogc/) -- Context on how ArcGIS Hub does feeds differently
+
+### Downloadable Catalog Export
+- [DCAT-US Schema v1.1 (Project Open Data)](https://resources.data.gov/resources/dcat-us/) -- HIGH confidence, official US government standard
+- [DCAT-US field mappings](https://resources.data.gov/resources/podm-field-mapping/) -- Required/optional field details
+- [DCAT-US v3.0 draft](https://doi-do.github.io/dcat-us/) -- Future direction, not yet required
+
+### AI Field Descriptions
+- [Automatic database description generation (arXiv)](https://arxiv.org/html/2502.20657v1) -- Research on LLM column descriptions
+- [LLM-powered data classification at Grab](https://engineering.grab.com/llm-powered-data-classification) -- Batch column enrichment patterns
+- [IBM Knowledge Catalog LLM enrichment](https://guptaneeru.medium.com/with-the-advances-in-technology-a-large-amount-of-data-is-produced-daily-3556a9b643b1) -- Enterprise metadata enrichment patterns
+- [DataHub AI-assisted catalogs](https://datahub.com/blog/ai-assisted-data-catalogs-an-llm-powered-by-knowledge-graphs-for-metadata-discovery/) -- Industry context
+
+### Multi-Jurisdiction Portals (verified live 2026-02-26)
+- [Broward County GeoHub](https://geohub-bcgis.opendata.arcgis.com/) -- ArcGIS Hub, 83 datasets, `/api/search/v1` confirmed working
+- [City of Miami Open Data GIS](https://datahub-miamigis.opendata.arcgis.com/) -- ArcGIS Hub, 83 datasets, `/api/search/v1` confirmed working
+- [City of Miami Socrata portal](https://data.miamigov.com/) -- Socrata/Tyler platform, deferred to v1.2
+- [Socrata Developer Portal (City of Miami)](https://dev.socrata.com/foundry/data.miamigov.com/ub3m-qgg5) -- Confirms Socrata platform
 
 ---
-*Feature research for: Miami-Dade County Open Data Encyclopedia*
-*Researched: 2026-02-24*
+*Feature research for: MDC Open Data Encyclopedia v1.1*
+*Researched: 2026-02-26*
