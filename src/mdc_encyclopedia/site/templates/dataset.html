@@ -20,6 +20,11 @@
         {% if dataset.letter_grade %}
         <span class="grade {{ dataset.grade_css }}" title="Quality Grade: {{ dataset.letter_grade }}">{{ dataset.letter_grade }}</span>
         {% endif %}
+        {% if dataset.jurisdiction_display_name %}
+        <span class="jurisdiction-badge jurisdiction-{{ dataset.jurisdiction|default('unknown') }}">
+            {{ dataset.jurisdiction_display_name }}
+        </span>
+        {% endif %}
     </h1>
 </div>
 

@@ -9,6 +9,7 @@
   var formatSelect = document.getElementById("filter-format");
   var publisherSelect = document.getElementById("filter-publisher");
   var tagSelect = document.getElementById("filter-tag");
+  var jurisdictionSelect = document.getElementById("filter-jurisdiction");
   var clearBtn = document.getElementById("clear-filters");
   var resultCount = document.getElementById("result-count");
   var chipsContainer = document.getElementById("filter-chips");
@@ -24,6 +25,7 @@
     var formatVal = formatSelect.value.toLowerCase();
     var publisherVal = publisherSelect.value.toLowerCase();
     var tagVal = tagSelect.value.toLowerCase();
+    var jurisdictionVal = jurisdictionSelect ? jurisdictionSelect.value.toLowerCase() : "";
     var visibleCount = 0;
 
     for (var i = 0; i < rows.length; i++) {
@@ -31,12 +33,14 @@
       var rowFormat = row.getAttribute("data-format") || "";
       var rowPublisher = row.getAttribute("data-publisher") || "";
       var rowTags = row.getAttribute("data-tags") || "";
+      var rowJurisdiction = row.getAttribute("data-jurisdiction") || "";
 
       var matchFormat = !formatVal || rowFormat === formatVal;
       var matchPublisher = !publisherVal || rowPublisher === publisherVal;
       var matchTag = !tagVal || rowTags.indexOf(tagVal) !== -1;
+      var matchJurisdiction = !jurisdictionVal || rowJurisdiction === jurisdictionVal;
 
-      if (matchFormat && matchPublisher && matchTag) {
+      if (matchFormat && matchPublisher && matchTag && matchJurisdiction) {
         row.style.display = "";
         visibleCount++;
       } else {
@@ -45,14 +49,14 @@
     }
 
     resultCount.textContent = visibleCount + " dataset" + (visibleCount !== 1 ? "s" : "");
-    renderChips(formatVal, publisherVal, tagVal);
+    renderChips(formatVal, publisherVal, tagVal, jurisdictionVal);
   }
 
   /**
    * Render active filter chips below the filter bar.
    * Each chip shows the filter type and value with a remove button.
    */
-  function renderChips(formatVal, publisherVal, tagVal) {
+  function renderChips(formatVal, publisherVal, tagVal, jurisdictionVal) {
     chipsContainer.innerHTML = "";
 
     if (formatVal) {
@@ -70,6 +74,12 @@
     if (tagVal) {
       chipsContainer.appendChild(createChip("Tag", tagVal, function () {
         tagSelect.value = "";
+        applyFilters();
+      }));
+    }
+    if (jurisdictionVal) {
+      chipsContainer.appendChild(createChip("Jurisdiction", jurisdictionVal, function () {
+        if (jurisdictionSelect) jurisdictionSelect.value = "";
         applyFilters();
       }));
     }
@@ -102,11 +112,13 @@
   formatSelect.addEventListener("change", applyFilters);
   publisherSelect.addEventListener("change", applyFilters);
   tagSelect.addEventListener("change", applyFilters);
+  if (jurisdictionSelect) jurisdictionSelect.addEventListener("change", applyFilters);
 
   clearBtn.addEventListener("click", function () {
     formatSelect.value = "";
     publisherSelect.value = "";
     tagSelect.value = "";
+    if (jurisdictionSelect) jurisdictionSelect.value = "";
     applyFilters();
   });
 })();

@@ -33,6 +33,13 @@
         {% endfor %}
     </select>
 
+    <select id="filter-jurisdiction" aria-label="Filter by jurisdiction">
+        <option value="">All Jurisdictions</option>
+        {% for j in jurisdictions %}
+        <option value="{{ j }}">{{ jurisdiction_labels.get(j, j) }}</option>
+        {% endfor %}
+    </select>
+
     <button class="clear-btn" id="clear-filters" type="button">Clear All</button>
     <span class="result-count" id="result-count">{{ dataset_count }} datasets</span>
 </div>
@@ -46,7 +53,8 @@
     <div class="dataset-row"
          data-format="{{ ds.format|default('')|lower }}"
          data-publisher="{{ ds.publisher|default('')|lower }}"
-         data-tags="{{ ds.tags_text|default('')|lower }}">
+         data-tags="{{ ds.tags_text|default('')|lower }}"
+         data-jurisdiction="{{ ds.jurisdiction|default('')|lower }}">
         <div class="dataset-grade">
             <span class="grade {{ ds.grade_css|default('grade-none') }}" title="Grade: {{ ds.grade|default(ds.letter_grade)|default('N/A') }}">{{ ds.grade|default(ds.letter_grade)|default('?') }}</span>
         </div>
@@ -56,6 +64,11 @@
             </div>
             <div class="dataset-desc">{{ (ds.ai_description or ds.description or 'No description available')|truncate(120) }}</div>
             <div class="dataset-meta">
+                {% if ds.jurisdiction_display_name %}
+                <span class="jurisdiction-badge jurisdiction-{{ ds.jurisdiction|default('unknown') }}">
+                    {{ ds.jurisdiction_display_name }}
+                </span>
+                {% endif %}
                 {% if ds.department %}
                 <span class="chip">{{ ds.department }}</span>
                 {% endif %}
