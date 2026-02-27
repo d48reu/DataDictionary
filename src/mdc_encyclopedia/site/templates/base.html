@@ -6,6 +6,11 @@
     <title>{% block title %}MDC Data Encyclopedia{% endblock %}</title>
     <link rel="stylesheet" href="{{ base_url }}/static/style.css">
     {% block head %}{% endblock %}
+    {% if site_url %}
+    <link rel="alternate" type="application/atom+xml"
+          title="MDC Data Encyclopedia - Catalog Changes"
+          href="{{ site_url }}/atom.xml">
+    {% endif %}
 </head>
 <body>
     <nav class="top-nav">
