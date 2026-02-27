@@ -59,10 +59,10 @@ Plans:
   2. Opening the encyclopedia homepage in a browser with feed detection (e.g., Firefox) shows the feed autodiscovery icon
   3. Feed entries contain absolute URLs that resolve correctly when clicked from a feed reader (not relative paths)
   4. The `--site-url` parameter on the export command controls the base URL used in feed entries, and the command fails with a clear error if omitted
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 09-01: TBD
+- [ ] 09-01-PLAN.md — Atom feed generation module, CLI --site-url wiring, and HTML autodiscovery
 
 ### Phase 10: Enriched Catalog Export
 **Goal**: Developers and data users can download the full enriched catalog as JSON or CSV for use in their own tools
