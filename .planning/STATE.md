@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 11 - AI Field-Level Descriptions
+**Current focus:** Phase 12 - Site UI Polish & CI Pipeline
 
 ## Current Position
 
-Phase: 11 of 12 (AI Field-Level Descriptions)
+Phase: 12 of 12 (Site UI Polish & CI Pipeline)
 Plan: 2 of 2 in current phase
-Status: Phase 11 Complete
-Last activity: 2026-02-27 -- Completed 11-02 (CLI Command & UI Display)
+Status: Executing Phase 12
+Last activity: 2026-02-27 -- Completed 12-02 (CI Pipeline)
 
-Progress: [============================....] 88% (v1.0 complete, phases 8-11 complete)
+Progress: [==============================..] 94% (v1.0 complete, phases 8-12 in progress)
 
 ## Performance Metrics
 
@@ -31,6 +31,7 @@ Progress: [============================....] 88% (v1.0 complete, phases 8-11 com
 | 09 (Atom Feed) | 1/1 | 3 min | 3.0 min |
 | 10 (Enriched Catalog Export) | 1/1 | 4 min | 4.0 min |
 | 11 (AI Field-Level Descriptions) | 2/2 | 6 min | 3.0 min |
+| 12 (Site UI Polish & CI Pipeline) | 1/2 | 1 min | 1.0 min |
 
 *Updated after each plan completion*
 
@@ -61,6 +62,9 @@ All v1.0 decisions archived in PROJECT.md Key Decisions table.
 - 11-02: DEFAULT_MODEL from models.py used for enrich-fields command (consistent with enrich command pattern)
 - 11-02: Retry-once on API failure with 2s delay before skip-and-continue for batch resilience
 - 11-02: AI badge uses var(--mdc-blue) CSS custom property for consistent brand styling
+- 12-02: Enrichment gated on workflow_dispatch + enrich_ai true, preventing accidental API spend on scheduled runs
+- 12-02: enrich-fields added alongside enrich in same conditional step for single opt-in control
+- 12-02: Pull output piped to GITHUB_STEP_SUMMARY (tail -20) for concise failure reporting
 
 ### Pending Todos
 
@@ -74,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 11-02-PLAN.md (CLI Command & UI Display) -- Phase 11 complete
+Stopped at: Completed 12-02-PLAN.md (CI Pipeline) -- Phase 12 Plan 02 complete
 Resume file: None
