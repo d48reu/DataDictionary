@@ -42,4 +42,5 @@ packages = ["src/mdc_encyclopedia"]
 "src/mdc_encyclopedia/site/context.py" = "mdc_encyclopedia/site/context.py"
 "src/mdc_encyclopedia/site/search_index.py" = "mdc_encyclopedia/site/search_index.py"
 "src/mdc_encyclopedia/site/feed.py" = "mdc_encyclopedia/site/feed.py"
+"src/mdc_encyclopedia/site/catalog_export.py" = "mdc_encyclopedia/site/catalog_export.py"
 "src/mdc_encyclopedia/jurisdictions.yaml" = "mdc_encyclopedia/jurisdictions.yaml"
