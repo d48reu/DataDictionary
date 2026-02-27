@@ -49,6 +49,7 @@ from mdc_encyclopedia.ingestion.hub_client import (
     fetch_all_datasets,
 )
 from mdc_encyclopedia.ingestion.normalizer import normalize_hub_dataset
+from mdc_encyclopedia.registry import load_registry
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -75,93 +76,154 @@ def cli(ctx):
 
 @cli.command()
 @click.option("--verbose", is_flag=True, help="Show detailed duplicate title pairs.")
+@click.option(
+    "--jurisdiction", "-j", default=None,
+    help="Pull from a specific jurisdiction (e.g., broward). Pulls all if omitted.",
+)
 @click.pass_context
-def pull(ctx, verbose):
-    """Pull dataset metadata from Miami-Dade open data portals."""
+def pull(ctx, verbose, jurisdiction):
+    """Pull dataset metadata from registered open data portals."""
     start_time = time.time()
     db_path = ctx.obj["db_path"]
     conn = get_connection(db_path)
-    client = create_client()
+
+    # Load jurisdiction registry
+    registry = load_registry()
+
+    # Determine target jurisdictions
+    if jurisdiction:
+        if jurisdiction not in registry:
+            available = ", ".join(sorted(registry.keys()))
+            console.print(
+                f"[red]Unknown jurisdiction '{jurisdiction}'. "
+                f"Available: {available}[/red]"
+            )
+            conn.close()
+            raise click.Abort()
+        targets = {jurisdiction: registry[jurisdiction]}
+    else:
+        targets = registry
 
     pre_snapshot = capture_snapshot(conn)
     is_first_pull = len(pre_snapshot["dataset_ids"]) == 0
 
-    new_count = 0
-    updated_count = 0
-    skipped_count = 0
-    failed_datasets: list[tuple[str, str]] = []
+    # Per-jurisdiction results tracking
+    jurisdiction_results: list[dict] = []
+    total_new = 0
+    total_updated = 0
+    total_skipped = 0
+    all_failed_datasets: list[tuple[str, str]] = []
 
-    # Stage 1: Catalog Fetch
-    try:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TextColumn("datasets"),
-            TimeElapsedColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task("ArcGIS Hub", total=0)
+    # Stage 1: Catalog Fetch -- loop over jurisdictions
+    for slug, config in targets.items():
+        display_name = config["display_name"]
+        hub_url = config["hub_url"]
+        console.print(f"\n[bold]Pulling from {display_name}...[/bold]")
 
-            for feature, index, total in fetch_all_datasets(client):
-                if index == 1:
-                    progress.update(task, total=total)
+        j_new = 0
+        j_updated = 0
+        j_skipped = 0
+        j_error = None
 
-                try:
-                    normalized = normalize_hub_dataset(feature)
-                    result = upsert_dataset(conn, normalized)
-                    if result == "new":
-                        new_count += 1
-                    else:
-                        updated_count += 1
-                except Exception as exc:
-                    ds_id = feature.get("id", f"index-{index}")
-                    skipped_count += 1
-                    failed_datasets.append((ds_id, str(exc)))
-                    logger.warning("Failed to process dataset %s: %s", ds_id, exc)
-
-                progress.update(task, completed=index)
-
-    except Exception as exc:
-        console.print(f"[red]Catalog fetch failed: {exc}[/red]")
-        client.close()
-        conn.close()
-        raise click.Abort() from exc
-
-    # Stage 2: Field Metadata Fetch
-    rows = conn.execute(
-        "SELECT id, api_endpoint FROM datasets WHERE api_endpoint IS NOT NULL"
-    ).fetchall()
-
-    field_fetch_count = 0
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TextColumn("datasets"),
-        TimeElapsedColumn(),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Fetching fields", total=len(rows))
-
-        for row in rows:
-            dataset_id = row["id"]
-            api_endpoint = row["api_endpoint"]
+        try:
+            client = create_client(hub_url)
             try:
-                fields = fetch_fields_for_dataset(client, dataset_id, api_endpoint)
-                if fields:
-                    upsert_columns(conn, dataset_id, fields)
-                    field_fetch_count += 1
-            except Exception as exc:
-                logger.warning(
-                    "Failed to fetch fields for %s: %s", dataset_id, exc
-                )
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(),
+                    TaskProgressColumn(),
+                    TextColumn("datasets"),
+                    TimeElapsedColumn(),
+                    console=console,
+                ) as progress:
+                    task = progress.add_task(display_name, total=0)
 
-            progress.advance(task)
+                    for feature, index, total in fetch_all_datasets(client):
+                        if index == 1:
+                            progress.update(task, total=total)
 
-    # Stage 3: Dedup Detection
+                        try:
+                            normalized = normalize_hub_dataset(
+                                feature,
+                                jurisdiction=slug,
+                                hub_url=hub_url,
+                            )
+                            result = upsert_dataset(conn, normalized)
+                            if result == "new":
+                                j_new += 1
+                            else:
+                                j_updated += 1
+                        except Exception as exc:
+                            ds_id = feature.get("id", f"index-{index}")
+                            j_skipped += 1
+                            all_failed_datasets.append((f"{slug}/{ds_id}", str(exc)))
+                            logger.warning(
+                                "Failed to process dataset %s/%s: %s", slug, ds_id, exc
+                            )
+
+                        progress.update(task, completed=index)
+
+                # Field metadata fetch for this jurisdiction's datasets
+                rows = conn.execute(
+                    "SELECT id, api_endpoint FROM datasets "
+                    "WHERE jurisdiction = ? AND api_endpoint IS NOT NULL",
+                    (slug,),
+                ).fetchall()
+
+                if rows:
+                    with Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        BarColumn(),
+                        TaskProgressColumn(),
+                        TextColumn("datasets"),
+                        TimeElapsedColumn(),
+                        console=console,
+                    ) as progress:
+                        ftask = progress.add_task(
+                            f"Fields ({display_name})", total=len(rows)
+                        )
+                        for row in rows:
+                            dataset_id = row["id"]
+                            api_endpoint = row["api_endpoint"]
+                            try:
+                                fields = fetch_fields_for_dataset(
+                                    client, dataset_id, api_endpoint
+                                )
+                                if fields:
+                                    upsert_columns(conn, dataset_id, fields)
+                            except Exception as exc:
+                                logger.warning(
+                                    "Failed to fetch fields for %s: %s",
+                                    dataset_id, exc,
+                                )
+                            progress.advance(ftask)
+
+            finally:
+                client.close()
+
+        except Exception as exc:
+            j_error = str(exc)
+            console.print(
+                f"[red]Failed to pull from {display_name}: {exc}[/red]"
+            )
+            logger.warning("Jurisdiction %s failed: %s", slug, exc)
+
+        total_new += j_new
+        total_updated += j_updated
+        total_skipped += j_skipped
+
+        jurisdiction_results.append({
+            "slug": slug,
+            "display_name": display_name,
+            "new": j_new,
+            "updated": j_updated,
+            "skipped": j_skipped,
+            "error": j_error,
+        })
+
+    # Stage 2: Dedup Detection (across all jurisdictions)
     all_datasets = conn.execute("SELECT id, title FROM datasets").fetchall()
     dataset_dicts = [{"id": row["id"], "title": row["title"]} for row in all_datasets]
     duplicates = detect_duplicate_titles(dataset_dicts)
@@ -179,43 +241,54 @@ def pull(ctx, verbose):
             for title, ids in duplicates:
                 console.print(f"  [dim]{title}:[/dim] {', '.join(ids)}")
 
-    # Stage 4: Summary Table
+    # Stage 3: Per-jurisdiction results table
     conn.commit()
-
-    datasets_with_fields = conn.execute(
-        "SELECT COUNT(DISTINCT dataset_id) FROM columns"
-    ).fetchone()[0]
 
     elapsed = time.time() - start_time
     elapsed_min = int(elapsed // 60)
     elapsed_sec = int(elapsed % 60)
     elapsed_str = f"{elapsed_min}m {elapsed_sec}s"
 
-    total_datasets = new_count + updated_count
+    results_table = Table(title="Pull Summary")
+    results_table.add_column("Jurisdiction", style="bold")
+    results_table.add_column("New", justify="right")
+    results_table.add_column("Updated", justify="right")
+    results_table.add_column("Skipped", justify="right")
+    results_table.add_column("Status")
 
-    table = Table(title="Pull Summary")
-    table.add_column("Metric", style="bold")
-    table.add_column("Value", justify="right")
-    table.add_row("Portal", "ArcGIS Hub")
-    table.add_row("Total datasets", str(total_datasets))
-    table.add_row("New datasets", str(new_count))
-    table.add_row("Updated datasets", str(updated_count))
-    table.add_row("Duplicate titles", str(dup_count))
-    table.add_row("Datasets with fields", str(datasets_with_fields))
-    table.add_row("Skipped/failed", str(skipped_count))
-    table.add_row("Elapsed time", elapsed_str)
+    for jr in jurisdiction_results:
+        if jr["error"]:
+            status = f"[red]ERROR: {jr['error'][:40]}[/red]"
+        else:
+            status = "[green]OK[/green]"
+        results_table.add_row(
+            jr["display_name"],
+            str(jr["new"]),
+            str(jr["updated"]),
+            str(jr["skipped"]),
+            status,
+        )
 
-    console.print(table)
+    results_table.add_section()
+    results_table.add_row(
+        "Total",
+        str(total_new),
+        str(total_updated),
+        str(total_skipped),
+        elapsed_str,
+    )
 
-    if failed_datasets:
+    console.print(results_table)
+
+    if all_failed_datasets:
         fail_table = Table(title="Failed Datasets")
         fail_table.add_column("Dataset ID")
         fail_table.add_column("Error")
-        for ds_id, error in failed_datasets:
+        for ds_id, error in all_failed_datasets:
             fail_table.add_row(ds_id, error[:80])
         console.print(fail_table)
 
-    # Stage 5: Change Detection
+    # Stage 4: Change Detection
     if is_first_pull:
         total_now = conn.execute("SELECT COUNT(*) FROM datasets").fetchone()[0]
         console.print(
@@ -234,9 +307,8 @@ def pull(ctx, verbose):
         else:
             console.print("[green]No changes detected since last pull.[/green]")
 
-    # Stage 6: Cleanup
+    # Stage 5: Cleanup
     conn.close()
-    client.close()
 
 
 @cli.command()
@@ -673,6 +745,24 @@ def stats(ctx):
     portal_table.add_row("Total", str(total_datasets))
 
     console.print(portal_table)
+
+    # Section 1b: Datasets by Jurisdiction
+    jurisdiction_rows = conn.execute(
+        "SELECT jurisdiction, COUNT(*) as cnt FROM datasets "
+        "GROUP BY jurisdiction ORDER BY jurisdiction"
+    ).fetchall()
+
+    jurisdiction_table = Table(title="Datasets by Jurisdiction")
+    jurisdiction_table.add_column("Jurisdiction", style="bold")
+    jurisdiction_table.add_column("Count", justify="right")
+
+    for row in jurisdiction_rows:
+        jurisdiction_table.add_row(row["jurisdiction"], str(row["cnt"]))
+
+    jurisdiction_table.add_section()
+    jurisdiction_table.add_row("Total", str(total_datasets))
+
+    console.print(jurisdiction_table)
 
     # Section 2: Enrichment Status
     enriched_count = conn.execute("SELECT COUNT(*) FROM enrichments").fetchone()[0]
