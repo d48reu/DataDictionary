@@ -32,10 +32,10 @@ Requirements for milestone v1.1 Regional Expansion. Each maps to roadmap phases.
 
 ### Field AI
 
-- [ ] **FIELD-01**: AI-generated plain-English descriptions for all columns in B+ quality datasets
+- [x] **FIELD-01**: AI-generated plain-English descriptions for all columns in B+ quality datasets
 - [ ] **FIELD-02**: `enrich-fields` CLI command with `--dry-run`, `--limit`, and `--resume` flags
 - [ ] **FIELD-03**: Field descriptions displayed inline in dataset detail page columns table with AI badge
-- [ ] **FIELD-04**: Batch all columns per dataset in single API call (not per-column)
+- [x] **FIELD-04**: Batch all columns per dataset in single API call (not per-column)
 
 ## v1.2 Requirements
 
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPORT-01 | Phase 10 | Complete |
 | EXPORT-02 | Phase 10 | Complete |
 | EXPORT-03 | Phase 10 | Complete |
-| FIELD-01 | Phase 11 | Pending |
+| FIELD-01 | Phase 11 | Complete |
 | FIELD-02 | Phase 11 | Pending |
 | FIELD-03 | Phase 11 | Pending |
-| FIELD-04 | Phase 11 | Pending |
+| FIELD-04 | Phase 11 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 18 total
