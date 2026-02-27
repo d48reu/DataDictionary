@@ -6,7 +6,7 @@ import shutil
 import sqlite3
 from datetime import datetime
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS datasets (
@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS columns (
     name TEXT NOT NULL,
     data_type TEXT,
     description TEXT,
+    ai_description TEXT,
     UNIQUE(dataset_id, name)
 );
 
@@ -307,6 +308,15 @@ def init_db(db_path: str) -> bool:
             # Fresh database or empty: already created with V3 schema above
             conn.execute(f"PRAGMA user_version={CURRENT_SCHEMA_VERSION}")
 
+    if version < 4:
+        # V4: Add ai_description column to columns table for field-level enrichment
+        try:
+            conn.execute("ALTER TABLE columns ADD COLUMN ai_description TEXT")
+        except sqlite3.OperationalError:
+            # Column already exists (fresh DB created with V4 schema)
+            pass
+        conn.execute("PRAGMA user_version=4")
+
     conn.commit()
     conn.close()
     return is_new
@@ -352,8 +362,10 @@ def upsert_dataset(conn: sqlite3.Connection, dataset: dict) -> str:
         (id, jurisdiction, arcgis_id, source_portal, source_url, title,
          description, category, publisher, format, created_at, updated_at,
          row_count, tags, license, api_endpoint, bbox, download_url,
-         metadata_json, pulled_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+         metadata_json, pulled_at, ai_description)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                datetime('now'),
+                (SELECT ai_description FROM datasets WHERE id = ?))""",
         (
             dataset["id"],
             dataset.get("jurisdiction", "miami-dade"),
@@ -374,6 +386,7 @@ def upsert_dataset(conn: sqlite3.Connection, dataset: dict) -> str:
             dataset["bbox"],
             dataset["download_url"],
             dataset["metadata_json"],
+            dataset["id"],
         ),
     )
     conn.commit()
@@ -446,13 +459,83 @@ def get_columns_for_dataset(
         dataset_id: The dataset ID to fetch columns for.
 
     Returns:
-        List of column dicts with keys: name, data_type, description.
+        List of column dicts with keys: id, name, data_type, description,
+        ai_description.
     """
     rows = conn.execute(
-        "SELECT name, data_type, description FROM columns WHERE dataset_id = ?",
+        "SELECT id, name, data_type, description, ai_description "
+        "FROM columns WHERE dataset_id = ? ORDER BY id",
         (dataset_id,),
     ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_field_eligible_datasets(conn: sqlite3.Connection) -> list[dict]:
+    """Get B+ datasets that have columns lacking AI descriptions.
+
+    Returns datasets with audit grade A or B that have at least one column
+    without an ai_description. Useful for identifying datasets ready for
+    field-level enrichment.
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+
+    Returns:
+        List of dicts with keys: id, title, jurisdiction, api_endpoint,
+        letter_grade, total_columns, enriched_columns.
+    """
+    rows = conn.execute(
+        """
+        SELECT d.id, d.title, d.jurisdiction, d.api_endpoint,
+               a.letter_grade,
+               COUNT(c.id) as total_columns,
+               COUNT(CASE WHEN c.ai_description IS NOT NULL THEN 1 END) as enriched_columns
+        FROM datasets d
+        JOIN audit_scores a ON d.id = a.dataset_id
+        JOIN columns c ON d.id = c.dataset_id
+        WHERE a.letter_grade IN ('A', 'B')
+        GROUP BY d.id
+        HAVING COUNT(CASE WHEN c.ai_description IS NULL THEN 1 END) > 0
+        ORDER BY d.title
+        """
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def update_column_ai_descriptions(
+    conn: sqlite3.Connection, dataset_id: str, descriptions: dict[str, str]
+) -> int:
+    """Update AI descriptions for columns in a dataset.
+
+    Takes a dict mapping column_name -> ai_description and updates the
+    matching column rows. Uses case-insensitive name matching as a fallback
+    if exact match fails.
+
+    Args:
+        conn: An open sqlite3.Connection (caller manages lifecycle).
+        dataset_id: The dataset ID whose columns to update.
+        descriptions: Dict mapping column_name to ai_description text.
+
+    Returns:
+        Number of columns successfully updated.
+    """
+    updated = 0
+    for col_name, ai_desc in descriptions.items():
+        # Try exact match first
+        cursor = conn.execute(
+            "UPDATE columns SET ai_description = ? WHERE dataset_id = ? AND name = ?",
+            (ai_desc, dataset_id, col_name),
+        )
+        if cursor.rowcount == 0:
+            # Fallback to case-insensitive match
+            cursor = conn.execute(
+                "UPDATE columns SET ai_description = ? "
+                "WHERE dataset_id = ? AND LOWER(name) = LOWER(?)",
+                (ai_desc, dataset_id, col_name),
+            )
+        updated += cursor.rowcount
+    conn.commit()
+    return updated
 
 
 def insert_enrichment(
@@ -490,6 +573,11 @@ def insert_enrichment(
             result["civic_relevance"],
             prompt_version,
         ),
+    )
+    # Write-through: sync ai_description to datasets table for fast queries
+    conn.execute(
+        "UPDATE datasets SET ai_description = ? WHERE id = ?",
+        (result["description"], dataset_id),
     )
     conn.commit()
 
@@ -672,17 +760,3 @@ def upsert_audit_score(
     conn.commit()
 
 
-def get_datasets_by_jurisdiction(conn: sqlite3.Connection) -> list[dict]:
-    """Get dataset counts grouped by jurisdiction.
-
-    Args:
-        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
-
-    Returns:
-        List of dicts with keys: jurisdiction, cnt. Ordered by jurisdiction.
-    """
-    rows = conn.execute(
-        "SELECT jurisdiction, COUNT(*) as cnt "
-        "FROM datasets GROUP BY jurisdiction ORDER BY jurisdiction"
-    ).fetchall()
-    return [dict(row) for row in rows]
