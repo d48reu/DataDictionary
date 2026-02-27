@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 8 - Multi-Jurisdiction Foundation
+**Current focus:** Phase 9 - Atom Feed
 
 ## Current Position
 
-Phase: 8 of 12 (Multi-Jurisdiction Foundation) -- COMPLETE
-Plan: 2 of 2 in current phase
+Phase: 9 of 12 (Atom Feed) -- COMPLETE
+Plan: 1 of 1 in current phase
 Status: Phase Complete
-Last activity: 2026-02-27 -- Completed 08-02 (Multi-Jurisdiction Pipeline Parameterization)
+Last activity: 2026-02-27 -- Completed 09-01 (Atom Feed Generation)
 
-Progress: [=====================...........] 67% (v1.0 complete, phase 8 complete)
+Progress: [=======================.........] 72% (v1.0 complete, phases 8-9 complete)
 
 ## Performance Metrics
 
@@ -28,6 +28,7 @@ Progress: [=====================...........] 67% (v1.0 complete, phase 8 complet
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 08 (Multi-Jurisdiction Foundation) | 2/2 | 8 min | 4.0 min |
+| 09 (Atom Feed) | 1/1 | 3 min | 3.0 min |
 
 *Updated after each plan completion*
 
@@ -46,6 +47,9 @@ All v1.0 decisions archived in PROJECT.md Key Decisions table.
 - 08-02: Default parameters for backward compatibility in hub client and normalizer
 - 08-02: Generic department guidance for non-Miami-Dade jurisdictions (avoid incorrect assignments)
 - 08-02: PROMPT_VERSION bumped to v1.1 for template-driven prompt change
+- 09-01: Prefix tag format for feed entry titles: [New], [Removed], [Schema Change]
+- 09-01: Tag URI scheme for entry IDs ensures stability across rebuilds
+- 09-01: Feed generation gated on --site-url; omitting skips with warning
 
 ### Pending Todos
 
@@ -59,5 +63,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 08-02-PLAN.md (Multi-Jurisdiction Pipeline Parameterization) -- Phase 8 complete
+Stopped at: Completed 09-01-PLAN.md (Atom Feed Generation) -- Phase 9 complete
 Resume file: None

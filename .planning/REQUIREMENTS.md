@@ -20,9 +20,9 @@ Requirements for milestone v1.1 Regional Expansion. Each maps to roadmap phases.
 
 ### Atom Feed
 
-- [ ] **FEED-01**: Atom 1.0 feed generated during site build with recent catalog changes (new, removed, schema changes)
-- [ ] **FEED-02**: Feed autodiscovery `<link>` in HTML `<head>`
-- [ ] **FEED-03**: `--site-url` parameter on export command for absolute URLs in feed entries
+- [x] **FEED-01**: Atom 1.0 feed generated during site build with recent catalog changes (new, removed, schema changes)
+- [x] **FEED-02**: Feed autodiscovery `<link>` in HTML `<head>`
+- [x] **FEED-03**: `--site-url` parameter on export command for absolute URLs in feed entries
 
 ### Catalog Export
 
@@ -82,9 +82,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MULTI-06 | Phase 12 | Pending |
 | MULTI-07 | Phase 12 | Pending |
 | MULTI-08 | Phase 12 | Pending |
-| FEED-01 | Phase 9 | Pending |
-| FEED-02 | Phase 9 | Pending |
-| FEED-03 | Phase 9 | Pending |
+| FEED-01 | Phase 9 | Complete |
+| FEED-02 | Phase 9 | Complete |
+| FEED-03 | Phase 9 | Complete |
 | EXPORT-01 | Phase 10 | Pending |
 | EXPORT-02 | Phase 10 | Pending |
 | EXPORT-03 | Phase 10 | Pending |
