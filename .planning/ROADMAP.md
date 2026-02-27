@@ -2,26 +2,117 @@
 
 ## Milestones
 
-- ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-02-26)
+- ✅ **v1.0 MVP** -- Phases 1-7 (shipped 2026-02-26)
+- **v1.1 Regional Expansion** -- Phases 8-12 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 MVP (Phases 1-7) — SHIPPED 2026-02-26</summary>
+<summary>v1.0 MVP (Phases 1-7) -- SHIPPED 2026-02-26</summary>
 
-- [x] Phase 1: Foundation (2/2 plans) — completed 2026-02-25
-- [x] Phase 2: Data Ingestion (3/3 plans) — completed 2026-02-25
-- [x] Phase 3: AI Enrichment (2/2 plans) — completed 2026-02-25
-- [x] Phase 4: Quality Audit (2/2 plans) — completed 2026-02-26
-- [x] Phase 5: Change Detection (2/2 plans) — completed 2026-02-26
-- [x] Phase 6: Static Site (5/5 plans) — completed 2026-02-26
-- [x] Phase 7: Deployment (2/2 plans) — completed 2026-02-26
+- [x] Phase 1: Foundation (2/2 plans) -- completed 2026-02-25
+- [x] Phase 2: Data Ingestion (3/3 plans) -- completed 2026-02-25
+- [x] Phase 3: AI Enrichment (2/2 plans) -- completed 2026-02-25
+- [x] Phase 4: Quality Audit (2/2 plans) -- completed 2026-02-26
+- [x] Phase 5: Change Detection (2/2 plans) -- completed 2026-02-26
+- [x] Phase 6: Static Site (5/5 plans) -- completed 2026-02-26
+- [x] Phase 7: Deployment (2/2 plans) -- completed 2026-02-26
 
 Full details: `milestones/v1.0-ROADMAP.md`
 
 </details>
 
+### v1.1 Regional Expansion
+
+**Milestone Goal:** Expand the encyclopedia with multi-jurisdiction coverage (Broward County, City of Miami), subscribable change feeds, developer-friendly catalog exports, and AI field-level column descriptions.
+
+- [ ] **Phase 8: Multi-Jurisdiction Foundation** - Jurisdiction registry, parameterized hub client, Schema V3 migration, and per-jurisdiction CLI pull
+- [ ] **Phase 9: Atom Feed** - Subscribable Atom 1.0 feed for catalog changes with autodiscovery and absolute URLs
+- [ ] **Phase 10: Enriched Catalog Export** - Downloadable JSON and CSV catalog with DCAT-US alignment and download links on About page
+- [ ] **Phase 11: AI Field-Level Descriptions** - AI-generated plain-English column descriptions for B+ datasets with CLI command and inline display
+- [ ] **Phase 12: Site UI Polish and CI Pipeline** - Jurisdiction filter, badges, search index update, and multi-jurisdiction CI pipeline
+
+## Phase Details
+
+### Phase 8: Multi-Jurisdiction Foundation
+**Goal**: Users can pull and store datasets from Miami-Dade, Broward County, and City of Miami in a single unified catalog without data loss or ID collisions
+**Depends on**: Phase 7 (v1.0 complete)
+**Requirements**: MULTI-01, MULTI-02, MULTI-03, MULTI-04
+**Success Criteria** (what must be TRUE):
+  1. Running `mdc-encyclopedia pull --jurisdiction broward` fetches datasets from Broward County's ArcGIS Hub and stores them in the local database
+  2. Running `mdc-encyclopedia pull` without flags pulls from all registered jurisdictions sequentially
+  3. Existing Miami-Dade datasets retain all enrichment and audit data after Schema V3 migration (zero data loss verified via row counts)
+  4. Datasets from different jurisdictions with identical ArcGIS IDs coexist in the database without overwriting each other
+  5. `mdc-encyclopedia stats` shows dataset counts broken down by jurisdiction
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01: TBD
+- [ ] 08-02: TBD
+
+### Phase 9: Atom Feed
+**Goal**: Users can subscribe to catalog changes via a standard Atom feed that works in any feed reader
+**Depends on**: Phase 8
+**Requirements**: FEED-01, FEED-02, FEED-03
+**Success Criteria** (what must be TRUE):
+  1. An `atom.xml` file is generated during site build containing the most recent catalog changes (new, removed, schema-changed datasets) across all jurisdictions
+  2. Opening the encyclopedia homepage in a browser with feed detection (e.g., Firefox) shows the feed autodiscovery icon
+  3. Feed entries contain absolute URLs that resolve correctly when clicked from a feed reader (not relative paths)
+  4. The `--site-url` parameter on the export command controls the base URL used in feed entries, and the command fails with a clear error if omitted
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01: TBD
+
+### Phase 10: Enriched Catalog Export
+**Goal**: Developers and data users can download the full enriched catalog as JSON or CSV for use in their own tools
+**Depends on**: Phase 8
+**Requirements**: EXPORT-01, EXPORT-02, EXPORT-03
+**Success Criteria** (what must be TRUE):
+  1. A JSON file with DCAT-US v1.1 field alignment is generated during site build, containing all datasets with their AI enrichments and jurisdiction field
+  2. A CSV file with UTF-8 BOM opens correctly in Excel on Windows without character encoding issues
+  3. The About page displays download links for both formats with file size indicated
+  4. Both export files include datasets from all jurisdictions in the catalog
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: TBD
+
+### Phase 11: AI Field-Level Descriptions
+**Goal**: Users can read plain-English descriptions of every column in high-quality datasets, generated by AI with appropriate transparency
+**Depends on**: Phase 8
+**Requirements**: FIELD-01, FIELD-02, FIELD-03, FIELD-04
+**Success Criteria** (what must be TRUE):
+  1. Running `mdc-encyclopedia enrich-fields --dry-run` displays the number of eligible datasets/columns and estimated API cost without making any API calls
+  2. After enrichment, visiting a B+ dataset detail page shows a plain-English description next to each column name with a visible AI badge
+  3. Running `enrich-fields --limit 5` enriches only 5 datasets and `--resume` skips datasets already enriched
+  4. All columns for a single dataset are sent in one API call (verified by API call count matching dataset count, not column count)
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: TBD
+- [ ] 11-02: TBD
+
+### Phase 12: Site UI Polish and CI Pipeline
+**Goal**: The published site surfaces jurisdiction context throughout the browsing experience and the full multi-jurisdiction pipeline runs automatically in CI
+**Depends on**: Phase 8, Phase 9, Phase 10, Phase 11
+**Requirements**: MULTI-05, MULTI-06, MULTI-07, MULTI-08
+**Success Criteria** (what must be TRUE):
+  1. The browse page has a jurisdiction filter dropdown that narrows the dataset list to a single jurisdiction when selected
+  2. Every dataset card and detail page displays a jurisdiction badge showing which government published the data
+  3. Searching for a jurisdiction name (e.g., "Broward") in the site search returns datasets from that jurisdiction
+  4. The GitHub Actions CI pipeline pulls from all three jurisdictions, builds the site with feeds and exports, and deploys to GitHub Pages without manual intervention
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: TBD
+- [ ] 12-02: TBD
+
 ## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
+Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each other. Phase 12 depends on all prior phases.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -32,3 +123,8 @@ Full details: `milestones/v1.0-ROADMAP.md`
 | 5. Change Detection | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 6. Static Site | v1.0 | 5/5 | Complete | 2026-02-26 |
 | 7. Deployment | v1.0 | 2/2 | Complete | 2026-02-26 |
+| 8. Multi-Jurisdiction Foundation | v1.1 | 0/TBD | Not started | - |
+| 9. Atom Feed | v1.1 | 0/TBD | Not started | - |
+| 10. Enriched Catalog Export | v1.1 | 0/TBD | Not started | - |
+| 11. AI Field-Level Descriptions | v1.1 | 0/TBD | Not started | - |
+| 12. Site UI Polish and CI Pipeline | v1.1 | 0/TBD | Not started | - |
