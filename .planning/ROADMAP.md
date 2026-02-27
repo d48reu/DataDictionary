@@ -125,6 +125,6 @@ Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each oth
 | 7. Deployment | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 8. Multi-Jurisdiction Foundation | v1.1 | 0/TBD | Not started | - |
 | 9. Atom Feed | v1.1 | 0/TBD | Not started | - |
-| 10. Enriched Catalog Export | 1/1 | Complete   | 2026-02-27 | - |
+| 10. Enriched Catalog Export | 1/1 | Complete    | 2026-02-27 | - |
 | 11. AI Field-Level Descriptions | v1.1 | 0/TBD | Not started | - |
 | 12. Site UI Polish and CI Pipeline | v1.1 | 0/TBD | Not started | - |
