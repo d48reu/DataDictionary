@@ -30,7 +30,7 @@ Full details: `milestones/v1.0-ROADMAP.md`
 - [x] **Phase 9: Atom Feed** - Subscribable Atom 1.0 feed for catalog changes with autodiscovery and absolute URLs (completed 2026-02-27)
 - [x] **Phase 10: Enriched Catalog Export** - Downloadable JSON and CSV catalog with DCAT-US alignment and download links on About page (completed 2026-02-27)
 - [x] **Phase 11: AI Field-Level Descriptions** - AI-generated plain-English column descriptions for B+ datasets with CLI command and inline display (completed 2026-02-27)
-- [ ] **Phase 12: Site UI Polish and CI Pipeline** - Jurisdiction filter, badges, search index update, and multi-jurisdiction CI pipeline
+- [x] **Phase 12: Site UI Polish and CI Pipeline** - Jurisdiction filter, badges, search index update, and multi-jurisdiction CI pipeline (completed 2026-02-27)
 
 ## Phase Details
 
@@ -134,4 +134,4 @@ Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each oth
 | 9. Atom Feed | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 10. Enriched Catalog Export | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 11. AI Field-Level Descriptions | 2/2 | Complete    | 2026-02-27 | - |
-| 12. Site UI Polish and CI Pipeline | 1/2 | In Progress|  | - |
+| 12. Site UI Polish and CI Pipeline | 2/2 | Complete   | 2026-02-27 | - |
