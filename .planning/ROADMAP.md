@@ -94,11 +94,11 @@ Plans:
   - Wire `build_system_prompt()` → `enrich_dataset()` for jurisdiction-aware enrichment
   - Add ai_description write-through in `insert_enrichment()`
   - Remove dead `get_datasets_by_jurisdiction()` from `db.py`
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 11-01: TBD
-- [ ] 11-02: TBD
+- [ ] 11-01-PLAN.md — Schema V4 migration, Pydantic models, field enrichment prompt/client, tech debt fixes
+- [ ] 11-02-PLAN.md — enrich-fields CLI command + dataset detail page AI badge rendering
 
 ### Phase 12: Site UI Polish and CI Pipeline
 **Goal**: The published site surfaces jurisdiction context throughout the browsing experience and the full multi-jurisdiction pipeline runs automatically in CI
