@@ -8,6 +8,16 @@ A CLI tool and static encyclopedia that catalogs, AI-enriches, and serves every 
 
 Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
 
+## Current Milestone: v1.1 Regional Expansion
+
+**Goal:** Expand the encyclopedia with field-level intelligence, developer exports, change feeds, and coverage of Broward County and City of Miami.
+
+**Target features:**
+- RSS/Atom feed surfacing new, removed, and schema-changed datasets
+- Downloadable enriched catalog as JSON + CSV
+- AI-generated plain-English descriptions for dataset columns (B+ quality datasets)
+- Multi-jurisdiction support: Broward County and City of Miami (unified catalog with jurisdiction filter)
+
 ## Requirements
 
 ### Validated
@@ -23,10 +33,10 @@ Every Miami-Dade open dataset is discoverable and understandable by a non-techni
 
 ### Active
 
-- [ ] RSS feed for catalog changes (NOTF-01)
-- [ ] Downloadable catalog as JSON/CSV for developers (EXPORT-01)
-- [ ] AI-generated plain-English descriptions for individual dataset fields/columns (FIELD-01, FIELD-02)
-- [ ] Support additional South Florida jurisdictions — Broward, City of Miami (MULTI-01, MULTI-02)
+- [ ] RSS/Atom feed for catalog changes — new, removed, and schema changes (FEED-01, FEED-02, FEED-03)
+- [ ] Downloadable enriched catalog as JSON + CSV (EXPORT-01, EXPORT-02)
+- [ ] AI-generated plain-English descriptions for dataset columns, B+ datasets only (FIELD-01, FIELD-02)
+- [ ] Multi-jurisdiction support — Broward County + City of Miami, unified catalog with jurisdiction filter (MULTI-01, MULTI-02, MULTI-03)
 
 ### Out of Scope
 
@@ -81,4 +91,4 @@ Every Miami-Dade open dataset is discoverable and understandable by a non-techni
 | DB committed to repo | actions/cache evicts after 7 days, too risky for data persistence | ✓ Good — [skip ci] prevents infinite loops |
 
 ---
-*Last updated: 2026-02-26 after v1.0 milestone*
+*Last updated: 2026-02-26 after v1.1 milestone started*
