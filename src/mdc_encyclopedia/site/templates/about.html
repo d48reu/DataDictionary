@@ -30,6 +30,25 @@
 </div>
 
 <div class="about-section">
+    <h2>Download Catalog Data</h2>
+    <p>Download the full enriched dataset catalog for use in your own tools and analyses:</p>
+    <ul>
+        {% if catalog_json_size_kb %}
+        <li>
+            <a href="{{ base_url }}/catalog.json" download>JSON (DCAT-US v1.1)</a>
+            -- {{ catalog_json_size_kb }} KB
+        </li>
+        {% endif %}
+        {% if catalog_csv_size_kb %}
+        <li>
+            <a href="{{ base_url }}/catalog.csv" download>CSV (Excel-compatible, UTF-8)</a>
+            -- {{ catalog_csv_size_kb }} KB
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+<div class="about-section">
     <h2>Credits</h2>
     <ul class="credits-list">
         <li>Built by <strong>Abreu Data Works LLC</strong></li>
