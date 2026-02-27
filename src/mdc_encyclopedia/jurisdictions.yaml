@@ -1,0 +1,15 @@
+jurisdictions:
+  miami-dade:
+    display_name: "Miami-Dade County"
+    hub_url: "https://opendata.miamidade.gov"
+    portal_type: "arcgis_hub"
+
+  broward:
+    display_name: "Broward County"
+    hub_url: "https://geohub-bcgis.opendata.arcgis.com"
+    portal_type: "arcgis_hub"
+
+  miami:
+    display_name: "City of Miami"
+    hub_url: "https://datahub-miamigis.opendata.arcgis.com"
+    portal_type: "arcgis_hub"
