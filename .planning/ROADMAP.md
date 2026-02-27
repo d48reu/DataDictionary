@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** -- Phases 1-7 (shipped 2026-02-26)
-- **v1.1 Regional Expansion** -- Phases 8-12 (in progress)
+- **v1.1 Regional Expansion** -- Phases 8-13 (in progress)
 
 ## Phases
 
@@ -31,6 +31,7 @@ Full details: `milestones/v1.0-ROADMAP.md`
 - [x] **Phase 10: Enriched Catalog Export** - Downloadable JSON and CSV catalog with DCAT-US alignment and download links on About page (completed 2026-02-27)
 - [x] **Phase 11: AI Field-Level Descriptions** - AI-generated plain-English column descriptions for B+ datasets with CLI command and inline display (completed 2026-02-27)
 - [x] **Phase 12: Site UI Polish and CI Pipeline** - Jurisdiction filter, badges, search index update, and multi-jurisdiction CI pipeline (completed 2026-02-27)
+- [ ] **Phase 13: Tech Debt — Jurisdiction Wiring & Column Preservation** - Wire jurisdiction through enrich command, preserve ai_description in upsert_columns
 
 ## Phase Details
 
@@ -115,11 +116,26 @@ Plans:
 - [ ] 12-01-PLAN.md — Jurisdiction filter dropdown, badges, and search index integration
 - [ ] 12-02-PLAN.md — CI pipeline update for multi-jurisdiction pull with optional enrichment
 
+### Phase 13: Tech Debt — Jurisdiction Wiring & Column Preservation
+**Goal**: The `enrich` CLI command produces jurisdiction-accurate AI summaries for all datasets, and standalone `pull` operations preserve existing AI field descriptions
+**Depends on**: Phase 12 (all prior phases complete)
+**Requirements**: None (tech debt closure, not new requirements)
+**Gap Closure:** Closes tech debt from v1.1-MILESTONE-AUDIT.md (integration 14/15 → 15/15, flow 3/4 → 4/4)
+**Success Criteria** (what must be TRUE):
+  1. Running `mdc-encyclopedia enrich` on a Broward dataset produces an AI summary referencing Broward County departments/services (not Miami-Dade)
+  2. `get_unenriched_datasets()` returns a `jurisdiction` field for each dataset
+  3. Running `mdc-encyclopedia pull` on a dataset with existing `ai_description` on its columns preserves those descriptions after pull completes
+  4. `upsert_columns()` uses INSERT OR REPLACE with subquery to preserve `ai_description` (mirrors `upsert_dataset()` pattern)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 13-01-PLAN.md — Wire jurisdiction to enrich command + preserve ai_description in upsert_columns
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
-Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each other. Phase 12 depends on all prior phases.
+Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13
+Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each other. Phase 12 depends on all prior phases. Phase 13 is tech debt closure.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -135,3 +151,4 @@ Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each oth
 | 10. Enriched Catalog Export | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 11. AI Field-Level Descriptions | 2/2 | Complete    | 2026-02-27 | - |
 | 12. Site UI Polish and CI Pipeline | 2/2 | Complete    | 2026-02-27 | - |
+| 13. Tech Debt — Jurisdiction Wiring & Column Preservation | v1.1 | 0/1 | Planned | - |
