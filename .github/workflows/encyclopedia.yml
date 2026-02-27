@@ -7,6 +7,10 @@ on:
     branches: [master]
   workflow_dispatch:
     inputs:
+      enrich_ai:
+        description: 'Run AI enrichment (dataset + field descriptions)'
+        type: boolean
+        default: false
       skip_enrichment:
         description: 'Skip the enrichment step entirely'
         type: boolean
@@ -48,7 +52,10 @@ jobs:
 
       - name: Pull latest data
         if: github.event_name != 'push'
-        run: mdc-encyclopedia pull
+        run: |
+          mdc-encyclopedia pull 2>&1 | tee /tmp/pull-output.txt
+          echo "## Data Pull Summary" >> $GITHUB_STEP_SUMMARY
+          tail -20 /tmp/pull-output.txt >> $GITHUB_STEP_SUMMARY
 
       - name: Run audit
         if: github.event_name != 'push'
@@ -59,17 +66,14 @@ jobs:
         run: mdc-encyclopedia diff || true
 
       - name: Enrich new datasets (conditional)
-        if: github.event_name != 'push'
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.enrich_ai == true &&
+          inputs.skip_enrichment != true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Skip if user requested skip_enrichment
-          if [ "${{ inputs.skip_enrichment }}" = "true" ]; then
-            echo "Enrichment skipped via skip_enrichment input"
-            exit 0
-          fi
-
           # Skip if no API key is configured
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "No ANTHROPIC_API_KEY set, skipping enrichment"
@@ -118,8 +122,11 @@ jobs:
             exit 0
           fi
 
-          # Enrich with Haiku model
+          # Enrich datasets with Haiku model
           mdc-encyclopedia enrich --model claude-haiku-4-5-20251001
+
+          # Enrich field-level descriptions
+          mdc-encyclopedia enrich-fields --model claude-haiku-4-5-20251001 --resume
 
       - name: Commit database updates
         if: github.event_name != 'push'
@@ -133,7 +140,10 @@ jobs:
       # --- Export + Deploy (all triggers) ---
 
       - name: Export static site
-        run: mdc-encyclopedia export -o site --base-url /${{ github.event.repository.name }}
+        run: >-
+          mdc-encyclopedia export -o site
+          --base-url /${{ github.event.repository.name }}
+          --site-url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
