@@ -1,181 +1,256 @@
-# Stack Research
+# Stack Research: v1.1 Additions
 
-**Domain:** Open data catalog/encyclopedia (Python CLI + static site generator)
+**Domain:** Open data catalog/encyclopedia -- new feature stack for v1.1
 **Project:** Miami-Dade County Open Data Encyclopedia
-**Researched:** 2026-02-24
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
-## Recommended Stack
+## Scope
 
-### Core Technologies
+This document covers ONLY the stack additions and changes needed for v1.1 features:
+1. RSS/Atom feed generation for catalog changes
+2. JSON/CSV enriched catalog export
+3. AI-generated field-level descriptions (B+ datasets)
+4. Multi-jurisdiction ArcGIS Hub support (Broward County, City of Miami)
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| Python | 3.12+ | Runtime | Project constraint. 3.12 is widely deployed, stable, and supported through 2028. Avoid 3.13+ unless needed -- 3.12 has the best library compat today. | HIGH (official docs) |
-| Click | 8.3.1 | CLI framework | The standard for Python CLIs. Groups/subcommands map directly to `mdc-encyclopedia pull`, `enrich`, `audit`, etc. Used by sqlite-utils itself, so it's a natural fit. Decorator-based API keeps command definitions readable. | HIGH (Context7 + PyPI) |
-| sqlite-utils | 3.39 | Database layer | Simon Willison's library wraps SQLite with a Pythonic API: auto-schema from dicts, built-in FTS5 support, upsert, and CLI companion. Eliminates raw SQL for 90% of operations. This is THE library for "SQLite as application database" in Python. | HIGH (Context7 + PyPI) |
-| Jinja2 | 3.1.6 | HTML templating | Pallets ecosystem (same as Click). Battle-tested for static site generation. Template inheritance handles layout/page hierarchy cleanly. No competing option worth considering. | HIGH (PyPI verified) |
-| Anthropic SDK | >=0.83.0 | AI enrichment | Official Python SDK with sync/async clients, streaming, and Message Batches API. Batches API is critical: enrich hundreds of datasets at 50% cost discount with async batch processing. Pin to `>=0.83` for latest model support. | HIGH (Context7 + PyPI) |
-| httpx | 0.28.1 | HTTP client | Replaces `requests` as the modern Python HTTP client. Sync and async with the same API, HTTP/2 support, and connection pooling. For this project, use **sync mode** -- async is unnecessary for sequential paginated API calls with rate limiting. Drop-in `requests` compatibility means familiar API. | HIGH (PyPI verified) |
-| Rich | 14.3.3 | Terminal output | Progress bars for catalog pulls, formatted tables for `stats`, colored output for `audit` results. Project constraint -- already specified. Best-in-class terminal formatting. | HIGH (PyPI verified) |
-| lunr.py | 0.8.0 | Search index generation | Python implementation of Lunr.js. Build the search index at export time in Python, serialize to JSON, load client-side with Lunr.js. Avoids Node.js dependency in the build pipeline. ~1000 dataset limit is fine for county-level catalog. | MEDIUM (PyPI + GitHub) |
+The validated v1.0 stack (Python 3.12+, SQLite, Click, Jinja2, Anthropic SDK, httpx, lunr.py, python-slugify, Rich) is NOT re-researched here.
 
-### Client-Side Technologies (Static Site)
+## Recommended Stack Additions
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| Lunr.js | 2.3.9 | Client-side search | Pre-built index from lunr.py loads instantly in browser. BM25 ranking, stemming, field boosting. Better real-time search performance than Fuse.js (faster per-query after index loads). Perfect for "type and filter" UX. | MEDIUM (web research) |
-| Vanilla JS | ES6+ | Interactivity | No framework needed. Search, filtering, and category browsing are simple DOM operations. Zero build step, zero bundle size concerns. Project constraint -- already specified. | HIGH (project decision) |
-| Vanilla CSS | CSS3 | Styling | Custom properties for MDC branding (#003366, white, amber). CSS Grid for layout. No build step. Tailwind/Bootstrap are overkill for a catalog site with consistent page templates. | HIGH (project decision) |
+### New Dependencies: NONE
 
-### Supporting Libraries
+Every v1.1 feature can be implemented with Python stdlib modules plus existing dependencies. No new pip packages are needed.
 
-| Library | Version | Purpose | When to Use | Confidence |
-|---------|---------|---------|-------------|------------|
-| python-slugify | 8.0.4 | URL-safe slugs | Generate clean filenames for dataset pages (`/datasets/miami-dade-property-data/index.html`). Handles unicode in dataset names. | HIGH (PyPI) |
-| python-dotenv | 1.0.1 | Environment variables | Load `.env` file for `ANTHROPIC_API_KEY` during local development. Not needed in CI (GitHub Secrets). | HIGH (standard practice) |
-| pytest | 9.0.2 | Testing | Unit tests for API parsing, enrichment prompt construction, SQLite operations. Required Python >=3.10 aligns with project. | HIGH (PyPI) |
-| pytest-httpx | 0.35.0 | HTTP mocking | Mock Socrata and ArcGIS API responses in tests without hitting real endpoints. Integrates cleanly with httpx. | MEDIUM (PyPI) |
+**Rationale:** The project already has the heavy lifting covered. Adding dependencies for simple tasks (feed XML, CSV export) would increase the attack surface and maintenance burden for minimal benefit.
 
-### Development Tools
+### Stdlib Modules to Leverage
 
-| Tool | Purpose | Notes | Confidence |
-|------|---------|-------|------------|
-| Hatchling | 1.29.0 | Build backend | Modern, fast Python build backend. Used by uv, recommended by Python Packaging Authority. Handles `pyproject.toml` entry points for `mdc-encyclopedia` CLI command. | HIGH (PyPI + packaging docs) |
-| Ruff | Latest | Linter + formatter | Replaces flake8, isort, and black in one tool. Sub-second execution. Industry standard in 2025+. | HIGH (ecosystem consensus) |
-| uv | Latest | Package manager | 10-100x faster than pip. Handles venv creation, dependency resolution, and lockfiles. Use for local dev. Falls back to pip in CI if needed. | MEDIUM (ecosystem trend) |
+| Module | Purpose | Feature | Why Sufficient |
+|--------|---------|---------|----------------|
+| `xml.etree.ElementTree` | Atom feed generation | FEED-01/02/03 | Atom 1.0 (RFC 4287) is a straightforward XML format. ~80 lines of code to generate a valid feed from the existing `changes` table. No namespace complexity issues since Atom uses a single namespace. |
+| `csv` (csv.DictWriter) | CSV catalog export | EXPORT-02 | SQLite rows are already dict-like (`sqlite3.Row`). DictWriter maps directly. Zero transformation needed. |
+| `json` (already used) | JSON catalog export | EXPORT-01 | Already imported in 10+ modules. `json.dumps()` on the enriched dataset list is trivial. |
+| `datetime` (already used) | Feed timestamps | FEED-01 | RFC 3339 timestamps for Atom `<updated>` elements. Already used throughout the codebase. |
 
-## Installation
+### Existing Dependencies That Extend Naturally
 
-```bash
-# Create project with pyproject.toml, then install in dev mode:
-pip install -e ".[dev]"
+| Existing Dep | v1.1 Feature | How It Extends |
+|-------------|-------------|----------------|
+| httpx | Multi-jurisdiction | Change `HUB_BASE_URL` from hardcoded constant to configurable per-jurisdiction. Same `create_client()` pattern, same rate limiting, same retry logic. All three portals use identical OGC API Records endpoints. |
+| Jinja2 | Feed template (optional) | Could render Atom XML via Jinja2 template instead of ElementTree. Simpler if feed structure is complex, but for this use case ElementTree is cleaner because XML namespace handling in Jinja2 requires `autoescape=False`. |
+| Anthropic SDK | Field descriptions | Extend `EnrichmentResult` Pydantic model with field-level descriptions. Same `messages.parse()` call, same structured output pattern. New prompt version (v2.0) for field enrichment. |
+| SQLite | Schema v3 | Add `field_enrichments` table or `ai_description` column to `columns` table. Same PRAGMA user_version migration pattern used for v1 to v2. |
+| Click | New CLI commands | `mdc-encyclopedia feed` and `mdc-encyclopedia catalog` commands follow the existing `@cli.command()` pattern. |
 
-# Or with uv (recommended for local dev):
-uv pip install -e ".[dev]"
+## Feature-by-Feature Stack Analysis
+
+### 1. RSS/Atom Feed (FEED-01/02/03)
+
+**Recommendation: Use `xml.etree.ElementTree` (stdlib), NOT feedgen.**
+
+| Option | Verdict | Reason |
+|--------|---------|--------|
+| xml.etree.ElementTree | USE THIS | Zero dependencies. Atom 1.0 is simple XML. ~80 lines of Python. No C extensions to compile. |
+| feedgen (python-feedgen) | AVOID | Requires `lxml` (C extension, ~30MB, compilation issues on some platforms) and `python-dateutil`. Last release Dec 2023, maintenance status inactive. Massive overkill for a feed with 3 entry types (added/removed/schema_changed). |
+| Jinja2 Atom template | POSSIBLE BUT WORSE | Would need `autoescape=False` for XML output, losing Jinja2's XSS protection globally or requiring a separate Environment. ElementTree is purpose-built for XML generation. |
+
+**Implementation approach:**
+```python
+# src/mdc_encyclopedia/feed/generator.py
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+
+ATOM_NS = "http://www.w3.org/2005/Atom"
+
+def generate_atom_feed(changes: list[dict], site_url: str, jurisdiction: str) -> str:
+    """Generate Atom 1.0 feed XML from change records."""
+    ET.register_namespace("", ATOM_NS)
+    feed = ET.Element(f"{{{ATOM_NS}}}feed")
+    # ... title, id, updated, entries from changes table
+    return ET.tostring(feed, encoding="unicode", xml_declaration=True)
 ```
 
-### pyproject.toml dependency groups
+**Feed output location:** `site/feed.xml` (Atom 1.0), linked from HTML `<head>` with `<link rel="alternate" type="application/atom+xml">`.
+
+**Why Atom over RSS 2.0:** Atom is a proper IETF standard (RFC 4287) with unambiguous semantics. RSS 2.0 has conflicting interpretations of fields like `pubDate` vs `dc:date`. All modern feed readers support both. Atom's `<updated>` and `<id>` semantics map cleanly to our change detection timestamps and dataset IDs.
+
+### 2. JSON/CSV Enriched Export (EXPORT-01/02)
+
+**Recommendation: Use `json` (stdlib) and `csv.DictWriter` (stdlib). No new deps.**
+
+**JSON export:**
+```python
+# Already have build_site_data() returning enriched dataset list
+# Export is: json.dumps(datasets, indent=2, ensure_ascii=False)
+```
+
+**CSV export:**
+```python
+import csv
+
+EXPORT_FIELDS = [
+    "id", "title", "description", "ai_description", "category",
+    "publisher", "department", "format", "updated_at", "created_at",
+    "letter_grade", "composite_score", "civic_relevance",
+    "use_cases", "keywords", "source_url", "download_url",
+    "jurisdiction",  # NEW for v1.1
+]
+```
+
+**Output locations:** `site/catalog.json` and `site/catalog.csv`, linked from homepage and about page.
+
+**Design decision:** Export the fully enriched view (datasets + enrichments + audit scores joined), not raw tables. Users downloading the catalog want the value-added data, not the raw metadata.
+
+### 3. AI Field-Level Descriptions (FIELD-01/02)
+
+**Recommendation: Extend existing Anthropic SDK usage. No new deps.**
+
+**What changes:**
+- New Pydantic model `FieldEnrichmentResult` in `enrichment/models.py`
+- New prompt in `enrichment/prompts.py` (bump to PROMPT_VERSION v2.0)
+- New DB column `columns.ai_description` or new table `field_enrichments`
+- Filter to B+ datasets only (composite_score >= 0.8 in audit_scores)
+
+**Schema approach -- add column (preferred over new table):**
+```sql
+-- Schema V3 upgrade
+ALTER TABLE columns ADD COLUMN ai_description TEXT;
+```
+Using `ALTER TABLE ADD COLUMN` is simpler than a new table and avoids JOINs. SQLite supports this cleanly. The `columns` table already stores field metadata -- an AI description is just another attribute of a column.
+
+**Cost model:** Field enrichment sends column names + types + dataset context to Claude. Estimated ~200 input tokens per dataset (column list is compact), ~50 output tokens per field. For B+ datasets (~100-150 datasets with 10-30 fields each), total cost estimate: $0.50-$2.00 with Haiku 4.5.
+
+**Structured output pattern (same as v1.0):**
+```python
+class FieldDescription(pydantic.BaseModel):
+    column_name: str
+    description: str  # Plain-English, 1 sentence
+
+class FieldEnrichmentResult(pydantic.BaseModel):
+    fields: list[FieldDescription]
+```
+
+### 4. Multi-Jurisdiction ArcGIS Hub (MULTI-01/02/03)
+
+**Recommendation: Parameterize the existing hub_client.py. No new deps.**
+
+**Verified portal endpoints (all use identical OGC API Records):**
+
+| Jurisdiction | Hub URL | API Endpoint | Datasets | Confidence |
+|-------------|---------|-------------|----------|------------|
+| Miami-Dade County | `https://opendata.miamidade.gov` | `/api/search/v1/collections/dataset/items` | 575 | HIGH (live verified) |
+| Broward County | `https://geohub-bcgis.opendata.arcgis.com` | `/api/search/v1/collections/dataset/items` | 83 | HIGH (live verified) |
+| City of Miami | `https://datahub-miamigis.opendata.arcgis.com` | `/api/search/v1/collections/dataset/items` | 83 | HIGH (live verified) |
+
+**All three portals return identical GeoJSON FeatureCollection responses** with the same property keys (`title`, `description`, `categories`, `tags`, `created`, `modified`, `type`, `url`). The existing `normalizer.normalize_hub_dataset()` function will work without modification for Broward and City of Miami data.
+
+**Key architecture change:** Replace the hardcoded `HUB_BASE_URL = "https://opendata.miamidade.gov"` in `hub_client.py` with a jurisdiction configuration:
+
+```python
+JURISDICTIONS = {
+    "miami-dade": {
+        "name": "Miami-Dade County",
+        "hub_url": "https://opendata.miamidade.gov",
+        "source_portal": "arcgis_hub_mdc",
+    },
+    "broward": {
+        "name": "Broward County",
+        "hub_url": "https://geohub-bcgis.opendata.arcgis.com",
+        "source_portal": "arcgis_hub_broward",
+    },
+    "miami-city": {
+        "name": "City of Miami",
+        "hub_url": "https://datahub-miamigis.opendata.arcgis.com",
+        "source_portal": "arcgis_hub_miami_city",
+    },
+}
+```
+
+**Important: City of Miami also has a Socrata portal** at `data.miamigov.com` (separate from the ArcGIS Hub). This is OUT OF SCOPE for v1.1. The ArcGIS Hub portal at `datahub-miamigis.opendata.arcgis.com` contains the GIS datasets. Adding Socrata support would require a completely different API client.
+
+**DB impact:** The `datasets.source_portal` column already exists and differentiates data sources. The `source_url` will naturally differ per jurisdiction. No schema change needed for multi-jurisdiction storage -- just different `source_portal` values.
+
+**CLI change:** Add `--jurisdiction` option to `pull` command:
+```bash
+mdc-encyclopedia pull                    # Miami-Dade only (default, backward compat)
+mdc-encyclopedia pull --jurisdiction all  # All three
+mdc-encyclopedia pull --jurisdiction broward  # Broward only
+```
+
+**Deduplication concern:** Datasets shared across jurisdictions (e.g., FEMA flood zones published by both Miami-Dade and Broward) will have DIFFERENT dataset IDs on each portal. They are separate records. Title-based dedup detection already exists (`detect_duplicate_titles`) and will flag cross-jurisdiction title collisions for human review. No code change needed.
+
+## What NOT to Add
+
+| Avoid | Why | Do Instead |
+|-------|-----|------------|
+| feedgen / python-feedgen | Pulls in lxml (heavy C dependency, ~30MB). Inactive maintenance. Atom XML generation is ~80 lines with stdlib. | `xml.etree.ElementTree` |
+| lxml | C extension requiring compilation. Adds platform-specific build issues (Windows, ARM, Alpine Linux). Not needed for simple Atom feed generation. | `xml.etree.ElementTree` |
+| pandas | Tempting for CSV/JSON export, but `csv.DictWriter` and `json.dumps` handle the export trivially. Pandas adds ~30MB for zero benefit here. | `csv` + `json` (stdlib) |
+| sodapy | Only covers Socrata Consumer API. City of Miami's Socrata portal is out of scope for v1.1. | N/A -- not needed |
+| python-dateutil | feedgen's dependency. Not needed since `datetime.fromisoformat()` (Python 3.7+) and `datetime.isoformat()` handle all our timestamp needs. Already used throughout codebase. | `datetime` (stdlib) |
+| pydantic (new install) | Already available as a transitive dependency of `anthropic` SDK. No separate install needed for `FieldEnrichmentResult` model. | Import from existing anthropic dependency chain |
+| aiohttp / async patterns | Three jurisdictions at 1 req/sec each = ~15 min total sequential pull time. Async would let us hit 3 portals in parallel (5 min) but adds complexity. Sequential is fine for weekly CI runs. Consider async only if pull time becomes a user complaint. | Sequential httpx with `time.sleep(1)` per portal |
+
+## Schema Changes Required (v3)
+
+```sql
+-- SCHEMA_V3_UPGRADE (in db.py)
+
+-- Add AI description column to existing columns table
+ALTER TABLE columns ADD COLUMN ai_description TEXT;
+
+-- Add jurisdiction column to datasets for filtering
+-- (source_portal already serves this purpose, but a human-readable
+-- jurisdiction name is useful for templates)
+ALTER TABLE datasets ADD COLUMN jurisdiction TEXT DEFAULT 'Miami-Dade County';
+
+-- Update PRAGMA
+-- PRAGMA user_version=3;
+```
+
+**Migration strategy:** Same pattern as V1->V2. `ALTER TABLE ADD COLUMN` is non-destructive and preserves existing data. SQLite handles this atomically.
+
+## pyproject.toml Changes
 
 ```toml
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+# NO changes to [project.dependencies] needed!
+# All v1.1 features use stdlib + existing deps.
 
+# The only change is version bump:
 [project]
-name = "mdc-encyclopedia"
-version = "0.1.0"
-requires-python = ">=3.12"
-dependencies = [
-    "click>=8.3.1",
-    "sqlite-utils>=3.39",
-    "httpx>=0.28.1",
-    "jinja2>=3.1.6",
-    "anthropic>=0.83.0",
-    "rich>=14.0",
-    "lunr>=0.8.0",
-    "python-slugify>=8.0",
-    "python-dotenv>=1.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=9.0",
-    "pytest-httpx>=0.35",
-    "ruff>=0.9",
-]
-
-[project.scripts]
-mdc-encyclopedia = "mdc_encyclopedia.cli:cli"
+version = "1.1.0"
 ```
 
-## Alternatives Considered
+## Integration Points Summary
 
-| Category | Recommended | Alternative | Why Not Alternative |
-|----------|-------------|-------------|---------------------|
-| HTTP client | httpx | requests | requests lacks async option if needed later, no HTTP/2, no connection pooling by default. httpx has 99% API compatibility with requests but is strictly more capable. |
-| HTTP client | httpx | sodapy | sodapy wraps the SODA *Consumer* API (for querying dataset rows). We need the *Discovery* API (catalog metadata) and *Views* API (column metadata), which sodapy does not cover. Raw HTTP calls to the Discovery API are simpler than wrapping sodapy. |
-| HTTP client | httpx | aiohttp | aiohttp is async-only. This project is sync-first (sequential API calls with rate limiting). httpx gives sync now, async later if needed. |
-| Database | sqlite-utils | SQLAlchemy | SQLAlchemy is an ORM for relational databases at scale. Massive overkill for a single-file SQLite catalog. sqlite-utils is purpose-built for this exact use case (dict-in, table-out, FTS built-in). |
-| Database | sqlite-utils | raw sqlite3 | sqlite3 stdlib works but requires manual schema management, manual FTS setup, no upsert helpers. sqlite-utils eliminates hundreds of lines of boilerplate. |
-| CLI | Click | Typer | Typer builds on Click with type hints. Adds a dependency for marginal benefit. Click is more mature, better documented, and sqlite-utils already uses it (consistent ecosystem). |
-| CLI | Click | argparse | argparse is stdlib but verbose for multi-command CLIs. Click's decorator model is cleaner for `pull`, `enrich`, `audit`, `diff`, `export`, `serve`, `stats` subcommands. |
-| Search | Lunr.js | Fuse.js | Fuse.js is fuzzy-search focused -- slower per-query, no pre-built index from Python. Lunr.js has lunr.py for Python-side index building, BM25 ranking, and faster real-time filtering. Fuse.js better for small unstructured data; Lunr.js better for structured catalog search. |
-| Search | Lunr.js | Algolia/Typesense | External search services require a backend or API key exposed client-side. Violates static-site constraint. |
-| Templating | Jinja2 | Mako | Mako is faster but less readable. Jinja2's template inheritance model is better for page layouts. Click ecosystem alignment (Pallets). |
-| Build backend | Hatchling | setuptools | setuptools works but requires more configuration. Hatchling is zero-config for pure Python projects, faster, and the modern default. |
-| Build backend | Hatchling | Poetry | Poetry couples build backend with dependency manager. Hatchling is decoupled -- works with pip, uv, or any PEP 517 frontend. |
-
-## What NOT to Use
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| sodapy | Only covers SODA Consumer API (querying rows). Does NOT support the Discovery API (`/api/catalog/v1`) needed for catalog metadata, nor the Views API (`/api/views/{id}.json`) for column metadata. Using it would still require raw HTTP for the core functionality. | httpx directly against Discovery API and Views API |
-| SQLAlchemy | ORM overhead for a single-file SQLite database with ~5 tables. Migration system, session management, and model definitions are unnecessary complexity. | sqlite-utils (dict-based, schema-inferred, FTS built-in) |
-| Flask/FastAPI | No web server needed. This is a CLI tool that generates static files. Adding a web framework violates the static-site constraint. | Click CLI + `python -m http.server` for local preview |
-| Node.js build pipeline | Adding Node as a build dependency for Lunr.js index generation is unnecessary. lunr.py generates compatible indexes in pure Python. | lunr.py (Python-native index building) |
-| Pandas | Tempting for data manipulation, but unnecessary. sqlite-utils handles data insertion/querying. Adding a 30MB dependency for what amounts to list-of-dict operations is wasteful. | sqlite-utils + stdlib collections |
-| CKAN/Datasette | Full data catalog platforms. CKAN requires Postgres + Solr + Redis. Datasette requires a running server. Both violate the static-site, zero-server constraint. | Custom static site generation with Jinja2 |
-| Pelican/Hugo/Jekyll | Static site generators with their own conventions, themes, and plugin ecosystems. The catalog's page structure is unique (dataset pages, category pages, quality reports) and doesn't map to blog-post models. Custom Jinja2 templates are simpler. | Jinja2 templates + custom Python export script |
-
-## Stack Patterns
-
-**For API rate limiting (Socrata/ArcGIS 1 req/sec):**
-- Use `time.sleep(1)` between requests in sync httpx. Simple and correct.
-- Do NOT use async + semaphore. The bottleneck is the rate limit, not concurrency. Async adds complexity with zero throughput benefit at 1 req/sec.
-
-**For AI enrichment (hundreds of datasets):**
-- Use the Anthropic **Message Batches API** for bulk enrichment. Submit all unenriched datasets as a batch, poll for completion, process results. 50% cost reduction vs. individual calls.
-- For `--dry-run` and `--resume`, query the SQLite database for unenriched datasets, show count and cost estimate, then submit only those.
-- Use `claude-sonnet-4-5-20250929` (not Opus) for enrichment. Sufficient quality for descriptions/keywords at ~10x lower cost.
-
-**For static site search index:**
-- Build index in Python at export time using lunr.py. Serialize to `search-index.json`.
-- Load pre-built index in browser with `lunr.Index.load()`. No client-side indexing needed.
-- Include dataset title, AI-generated description, keywords, department, and category in index fields. Boost title 10x, keywords 5x.
-
-**For GitHub Actions weekly refresh:**
-- `pip install .` in CI (not `pip install -e .`). Installs the package properly.
-- Run `mdc-encyclopedia pull && mdc-encyclopedia audit && mdc-encyclopedia export` as the CI pipeline.
-- Conditionally run `mdc-encyclopedia enrich --new-only` only if `ANTHROPIC_API_KEY` secret is set.
+| New Feature | Touches These Existing Files | New Files |
+|------------|------------------------------|-----------|
+| Atom Feed | `db.py` (query changes), `site/generator.py` (render feed), CLI (`feed` command) | `feed/generator.py` |
+| JSON/CSV Export | `site/context.py` (export data builder), `site/generator.py` (write files), CLI (`catalog` command) | None (extend existing) |
+| Field Descriptions | `enrichment/models.py` (new model), `enrichment/prompts.py` (v2 prompt), `enrichment/client.py` (new function), `db.py` (schema v3 + queries), CLI (`enrich --fields` flag) | None (extend existing) |
+| Multi-Jurisdiction | `ingestion/hub_client.py` (parameterize URL), `ingestion/normalizer.py` (jurisdiction in source_url), `db.py` (schema v3), CLI (`--jurisdiction` option), `site/context.py` (jurisdiction filter), templates (jurisdiction badge/filter) | `config/jurisdictions.py` or constants in hub_client.py |
 
 ## Version Compatibility
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| Click 8.3.1 | Python >=3.10 | Project requires 3.12+, so no issue |
-| sqlite-utils 3.39 | Python >=3.8 | Broad compat, no issues |
-| httpx 0.28.1 | Python >=3.8 | Broad compat, no issues |
-| Jinja2 3.1.6 | Python >=3.7 | Broad compat, no issues |
-| anthropic >=0.83.0 | Python >=3.9 | Requires >=3.9, project targets 3.12+ |
-| Rich 14.3.3 | Python >=3.8 | Broad compat, no issues |
-| lunr 0.8.0 | Python >=3.7 | Broad compat, no issues |
-| pytest 9.0.2 | Python >=3.10 | Project requires 3.12+, so no issue |
-| hatchling 1.29.0 | Python >=3.10 | Project requires 3.12+, so no issue |
+No new packages, so no new compatibility concerns. The existing stack (all verified in v1.0 research) remains valid.
 
-**No known cross-package conflicts.** All packages use standard dependencies. The sqlite-utils + Click pairing is well-tested (sqlite-utils itself uses Click).
+The only consideration: `ALTER TABLE ADD COLUMN` is supported in all SQLite versions shipped with Python 3.10+ (SQLite 3.35+). Python 3.12 ships SQLite 3.41+. No issue.
 
 ## Sources
 
-- [sqlite-utils Context7 docs](/simonw/sqlite-utils) -- FTS5 API, insert_all, enable_fts verified. HIGH confidence.
-- [Click Context7 docs](/pallets/click) -- Group/command pattern, options/arguments verified. HIGH confidence.
-- [Anthropic SDK Context7 docs](/anthropics/anthropic-sdk-python) -- Message Batches API, streaming verified. HIGH confidence.
-- [PyPI: sqlite-utils](https://pypi.org/project/sqlite-utils/) -- Version 3.39, Nov 2025. HIGH confidence.
-- [PyPI: click](https://pypi.org/project/click/) -- Version 8.3.1, Nov 2025. HIGH confidence.
-- [PyPI: anthropic](https://pypi.org/project/anthropic/) -- Version 0.83.0, Feb 2026. HIGH confidence.
-- [PyPI: httpx](https://pypi.org/project/httpx/) -- Version 0.28.1, Dec 2024. HIGH confidence.
-- [PyPI: Jinja2](https://pypi.org/project/Jinja2/) -- Version 3.1.6, Mar 2025. HIGH confidence.
-- [PyPI: Rich](https://pypi.org/project/rich/) -- Version 14.3.3, Feb 2026. HIGH confidence.
-- [PyPI: lunr](https://pypi.org/project/lunr/) -- Version 0.8.0, Mar 2025. HIGH confidence.
-- [PyPI: pytest](https://pypi.org/project/pytest/) -- Version 9.0.2, Dec 2025. HIGH confidence.
-- [PyPI: hatchling](https://pypi.org/project/hatchling/) -- Version 1.29.0, Feb 2026. HIGH confidence.
-- [PyPI: python-slugify](https://pypi.org/project/python-slugify/) -- Version 8.0.4, Feb 2024. HIGH confidence.
-- [Socrata Discovery API docs](https://dev.socrata.com/docs/other/discovery) -- Catalog endpoint, pagination. MEDIUM confidence (docs may lag API).
-- [Lunr.js pre-building guide](https://lunrjs.com/guides/index_prebuilding.html) -- Index serialization confirmed. MEDIUM confidence.
-- [Fuse.js vs Lunr.js comparisons](https://wiki.gpii.net/w/Technology_Evaluation_-_Static_Site_Search) -- Performance tradeoffs. MEDIUM confidence (community sources).
-- [Python build backends 2025](https://medium.com/@dynamicy/python-build-backends-in-2025-what-to-use-and-why-uv-build-vs-hatchling-vs-poetry-core-94dd6b92248f) -- Hatchling recommendation. MEDIUM confidence (blog post).
-- [Socrata sodapy](https://github.com/afeld/sodapy) -- Confirmed covers Consumer API only, not Discovery API. MEDIUM confidence.
+- [PyPI: feedgen](https://pypi.org/project/feedgen/) -- v1.0.0, Dec 2023. Requires lxml + python-dateutil. Maintenance inactive. HIGH confidence (verified).
+- [GitHub: python-feedgen](https://github.com/lkiesow/python-feedgen) -- setup.py confirms `install_requires=['lxml', 'python-dateutil']`. HIGH confidence (source code verified).
+- [Python xml.etree.ElementTree docs](https://docs.python.org/3/library/xml.etree.elementtree.html) -- XML generation API. HIGH confidence (official stdlib docs).
+- [Python csv module docs](https://docs.python.org/3/library/csv.html) -- DictWriter API. HIGH confidence (official stdlib docs).
+- [Broward County GeoHub](https://geohub-bcgis.opendata.arcgis.com/) -- ArcGIS Hub portal confirmed. HIGH confidence (live verified, 83 datasets).
+- [City of Miami Open Data GIS](https://datahub-miamigis.opendata.arcgis.com/) -- ArcGIS Hub portal confirmed. HIGH confidence (live verified, 83 datasets).
+- [Miami-Dade Open Data Hub](https://opendata.miamidade.gov/) -- Existing portal. HIGH confidence (live verified, 575 datasets).
+- Broward API endpoint `https://geohub-bcgis.opendata.arcgis.com/api/search/v1/collections/dataset/items` -- returns GeoJSON FeatureCollection, numberMatched=83. HIGH confidence (live API call).
+- City of Miami API endpoint `https://datahub-miamigis.opendata.arcgis.com/api/search/v1/collections/dataset/items` -- returns GeoJSON FeatureCollection, numberMatched=83. HIGH confidence (live API call).
+- [City of Miami Socrata portal](https://data.miamigov.com/) -- Separate Socrata-based portal, NOT ArcGIS Hub. Out of scope for v1.1. MEDIUM confidence (DNS resolution failed during research but confirmed via Socrata dev docs).
+- [Socrata Developer Portal](https://dev.socrata.com/foundry/data.miamigov.com/usdv-safk) -- Confirms data.miamigov.com is Socrata. MEDIUM confidence.
 
 ---
-*Stack research for: Miami-Dade County Open Data Encyclopedia*
-*Researched: 2026-02-24*
+*Stack research for: MDC Open Data Encyclopedia v1.1*
+*Researched: 2026-02-26*
+*Key finding: Zero new dependencies needed. All four features build on stdlib + existing stack.*

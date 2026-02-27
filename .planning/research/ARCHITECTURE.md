@@ -1,360 +1,740 @@
-# Architecture Research
+# Architecture Patterns: v1.1 Feature Integration
 
-**Domain:** Open data catalog / encyclopedia with AI enrichment (static site output)
-**Researched:** 2026-02-24
-**Confidence:** HIGH
+**Domain:** Open Data Encyclopedia -- v1.1 milestone (RSS feed, enriched export, field-level AI descriptions, multi-jurisdiction)
+**Researched:** 2026-02-26
+**Overall Confidence:** HIGH
 
-## Standard Architecture
+---
 
-### System Overview
+## Executive Summary
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         CLI Layer (Click)                           │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌───────┐ │
-│  │  pull  │ │ enrich │ │ audit  │ │  diff  │ │ export │ │ serve │ │
-│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬───┘ │
-│      │          │          │          │          │          │      │
-├──────┴──────────┴──────────┴──────────┴──────────┴──────────┴──────┤
-│                      Service / Logic Layer                         │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐               │
-│  │ API Clients  │ │  Enrichment  │ │  Site Builder │               │
-│  │ (Socrata,    │ │  Engine      │ │  (Jinja2 +   │               │
-│  │  ArcGIS Hub) │ │  (Claude)    │ │   Lunr.js)   │               │
-│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘               │
-│         │                │                │                        │
-├─────────┴────────────────┴────────────────┴────────────────────────┤
-│                      Storage Layer (SQLite)                        │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────┐  ┌──────────────┐   │
-│  │ datasets │  │ columns      │  │ enriched │  │ audit_log    │   │
-│  └──────────┘  └──────────────┘  └──────────┘  └──────────────┘   │
-├────────────────────────────────────────────────────────────────────┤
-│                      Output Layer (Static Files)                   │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────────┐                 │
-│  │ HTML     │  │ search.json  │  │ CSS/JS       │                 │
-│  │ pages    │  │ (Lunr index) │  │ assets       │                 │
-│  └──────────┘  └──────────────┘  └──────────────┘                 │
-└────────────────────────────────────────────────────────────────────┘
-```
+The v1.1 features integrate cleanly into the existing architecture with no rewrites required. The codebase's modular separation (ingestion, enrichment, audit, diff, site) creates natural insertion points for each feature. The biggest architectural change is multi-jurisdiction support, which threads a `jurisdiction` concept through every layer from ingestion to rendering. The other three features (RSS, enriched export, field-level AI) are additive -- new modules or extensions to existing ones with modest schema changes.
 
-### Component Responsibilities
+**Verified findings:**
+- Broward County (`geohub-bcgis.opendata.arcgis.com`) and City of Miami (`datahub-miamigis.opendata.arcgis.com`) both expose the identical ArcGIS Hub Search API at `/api/search/v1/collections/dataset/items` -- same OGC Records response schema, same property keys. HIGH confidence (verified via live API calls).
+- Broward County has 83 datasets; City of Miami has 83 datasets. Combined with Miami-Dade's 470, the unified catalog will be ~636 datasets.
+- 125 B+ graded datasets (105 A, 20 B) with 2,635 total columns are eligible for field-level AI descriptions.
+- `python-feedgen` v1.0.0 generates both RSS 2.0 and Atom XML to static files. Mature, stable, no active maintenance needed for this use case. HIGH confidence.
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| CLI Layer | User-facing commands, argument parsing, progress display | Click + Rich for terminal output |
-| Socrata Client | Enumerate all datasets from Discovery API, fetch column metadata per dataset | `httpx` or `requests` with pagination loop; 1 req/sec rate limit |
-| ArcGIS Hub Client | Enumerate all datasets from Hub API v3, normalize to common schema | `httpx` or `requests` with page/per_page pagination |
-| Storage Layer | Persist all metadata, enrichments, and audit results; support diffing | SQLite via `sqlite-utils` (single file, no server) |
-| Enrichment Engine | Generate plain-English descriptions, use cases, keywords via Claude | Anthropic Python SDK; batch-aware with resume/dry-run |
-| Audit Engine | Score datasets for staleness, emptiness, missing descriptions | Pure Python logic reading from SQLite |
-| Diff Engine | Compare current pull to previous pull, detect new/removed/changed | SQL queries against versioned snapshots in SQLite |
-| Site Builder | Render HTML from SQLite data using Jinja2 templates, build search index | Jinja2 templates + Node.js Lunr.js index builder (or Python lunr) |
-| Static Output | Deployable artifact: HTML pages, JSON search index, CSS/JS | Flat directory served by GitHub Pages |
+---
 
-## Recommended Project Structure
+## Current Architecture (v1.0 Baseline)
 
 ```
-mdc-encyclopedia/
-├── pyproject.toml              # Package config, entry points, dependencies
-├── src/
-│   └── mdc_encyclopedia/
-│       ├── __init__.py
-│       ├── cli.py              # Click command group (pull, enrich, audit, diff, export, serve)
-│       ├── clients/
-│       │   ├── __init__.py
-│       │   ├── socrata.py      # Socrata Discovery API + per-dataset metadata
-│       │   └── arcgis.py       # ArcGIS Hub API v3 client
-│       ├── storage/
-│       │   ├── __init__.py
-│       │   ├── db.py           # sqlite-utils DB initialization, schema, migrations
-│       │   └── models.py       # Data classes / typed dicts for dataset, column, enrichment
-│       ├── enrichment/
-│       │   ├── __init__.py
-│       │   ├── engine.py       # Orchestration: which datasets need enrichment, resume logic
-│       │   ├── prompts.py      # Claude prompt templates (system + user)
-│       │   └── cost.py         # Token estimation and cost preview
-│       ├── audit/
-│       │   ├── __init__.py
-│       │   └── quality.py      # Staleness checks, completeness scoring, empty detection
-│       ├── diff/
-│       │   ├── __init__.py
-│       │   └── changes.py      # Snapshot comparison: new, removed, schema changes
-│       └── export/
-│           ├── __init__.py
-│           ├── builder.py      # Jinja2 rendering orchestration
-│           ├── search.py       # Lunr.js JSON index generation
-│           └── templates/      # Jinja2 HTML templates
-│               ├── base.html
-│               ├── index.html
-│               ├── dataset.html
-│               ├── category.html
-│               ├── changes.html
-│               └── quality.html
-├── static/                     # CSS, JS, images (copied to output)
-│   ├── style.css
-│   ├── search.js              # Client-side Lunr.js search UI
-│   └── favicon.ico
-├── tests/
-│   ├── test_clients.py
-│   ├── test_storage.py
-│   ├── test_enrichment.py
-│   └── test_export.py
-├── .github/
-│   └── workflows/
-│       └── weekly-refresh.yml  # GitHub Actions: pull + export (+ optional enrich)
-└── data/                       # .gitignored — local SQLite DB lives here
-    └── mdc_encyclopedia.db
+CLI (cli.py, Click)
+  |
+  +-- pull -------> hub_client.py --[httpx]--> ArcGIS Hub API
+  |                 normalizer.py                    |
+  |                 field_fetcher.py                  |
+  |                        |                          |
+  |                        v                          |
+  |                  db.py (SQLite)  <----------------+
+  |                   datasets | columns | enrichments | audit_scores | changes
+  |
+  +-- enrich -----> enrichment/client.py --[anthropic]--> Claude API
+  |                 enrichment/prompts.py
+  |                 enrichment/models.py
+  |
+  +-- audit ------> audit/scorer.py
+  |
+  +-- diff -------> diff/detector.py
+  |
+  +-- export -----> site/generator.py
+  |                 site/context.py -----> Jinja2 templates ---> static HTML
+  |                 site/search_index.py -------> Lunr.js JSON
+  |
+  +-- stats ------> (inline queries)
+  +-- serve ------> (http.server)
+
+GitHub Actions (encyclopedia.yml)
+  pull -> audit -> diff -> enrich -> commit DB -> export -> deploy Pages
 ```
 
-### Structure Rationale
+**Key architectural constraints:**
+1. Single `source_portal` value today: `"arcgis_hub"` (hardcoded for Miami-Dade)
+2. `hub_client.py` has `HUB_BASE_URL = "https://opendata.miamidade.gov"` as a module constant
+3. `normalizer.py` builds `source_url` with hardcoded `opendata.miamidade.gov` domain
+4. DB schema has `source_portal TEXT` on datasets, currently always `"arcgis_hub"`
+5. No `jurisdiction` concept anywhere in the schema or site rendering
+6. Site templates show "MDC Data Encyclopedia" and "Miami-Dade County" throughout
+7. `changes` table has no jurisdiction awareness
+8. `export` command outputs flat static site with no jurisdiction-scoped URLs
 
-- **src/ layout:** Standard Python packaging convention. `mdc_encyclopedia` is the importable package; `cli.py` is the entry point registered via `pyproject.toml` console_scripts.
-- **clients/:** Each API source is its own module because Socrata and ArcGIS have fundamentally different pagination, auth, and metadata schemas. Both normalize into the same storage models.
-- **storage/:** Centralizes all database access. Every other component reads/writes through `db.py`, never directly constructing SQL. `sqlite-utils` handles schema creation and upserts.
-- **enrichment/:** Isolated from clients and storage so it can be run independently (`enrich` command), supports resume (tracks enrichment status in DB), and can be skipped entirely in CI.
-- **export/templates/:** Jinja2 templates live inside the package so they ship with `pip install`. The builder reads from SQLite, passes context to templates, writes HTML to an output directory.
-- **data/:** Gitignored. The SQLite file is a local artifact, not committed. CI creates it fresh each run.
+---
 
-## Architectural Patterns
+## Feature 1: RSS/Atom Feed Generation
 
-### Pattern 1: Pipeline-of-Commands (ETL Stages as CLI Subcommands)
+### Integration Point
 
-**What:** Each CLI command (`pull`, `enrich`, `audit`, `diff`, `export`) represents one stage of an ETL pipeline. They are independently runnable but designed to execute in sequence.
-**When to use:** Always. This is the core architecture.
-**Trade-offs:** (+) Each stage is testable in isolation, debuggable independently, skippable in CI. (-) Requires SQLite as the shared state between stages -- but that is a feature, not a bug, because SQLite is the single source of truth.
+The RSS feed is a **new output artifact** of the `export` command, generated alongside the HTML site. It reads from the `changes` table that already exists and is already populated by the `diff` detector during `pull`.
 
-**Example:**
+### Architecture Decision
+
+Generate the feed as a static XML file during `export`, not as a separate CLI command. Rationale: the feed is a site artifact (consumed by browsers/readers at a URL), so it belongs in the site output alongside HTML and JSON. This keeps the pipeline simple -- no new CI step needed.
+
+### New Component
+
+```
+src/mdc_encyclopedia/site/feed.py    (NEW)
+```
+
+### Data Flow
+
+```
+export command
+  |
+  +-- site/context.py::build_site_data()   (existing, already queries changes table)
+  |        |
+  |        v
+  |   site_data["changes"]  (list of change dicts with dataset_id, change_type,
+  |                           details, detected_at, title)
+  |
+  +-- site/feed.py::generate_feed(changes, datasets, output_dir, base_url)  (NEW)
+         |
+         +-- FeedGenerator()
+         +-- For each recent change: fg.add_entry(title, link, description, pubDate)
+         +-- fg.atom_file("site/feed.xml")
+         +-- fg.rss_file("site/rss.xml")
+```
+
+### Schema Changes
+
+None. The `changes` table already stores `dataset_id`, `change_type`, `details` (JSON), and `detected_at`. This is exactly what's needed for feed entries.
+
+### Template Changes
+
+- `base.html`: Add `<link rel="alternate" type="application/atom+xml" ...>` in `<head>` block
+- `base.html`: Add "RSS Feed" link in footer or nav
+- `changes.html`: Add RSS feed link/icon
+
+### New Dependencies
+
+```
+feedgen>=1.0.0
+```
+
+`python-feedgen` v1.0.0 is stable (released 2023-12-25), supports both RSS 2.0 and Atom, writes directly to files via `rss_file()` and `atom_file()`. No alternative needed -- this library does exactly one thing well. Confidence: HIGH.
+
+### Feed Entry Design
+
+Each change record maps to one feed entry:
+
+| Feed Field | Source |
+|------------|--------|
+| `title` | `"{change_type}: {dataset_title}"` (e.g., "New Dataset: Fire Stations") |
+| `link` | `"{base_url}/dataset/{slug}/"` (for added/schema) or `"{base_url}/changes/"` (for removed) |
+| `description` | Change details -- columns added/removed for schema changes, dataset category for additions |
+| `published` | `detected_at` from changes table |
+| `id` | `"urn:mdc-encyclopedia:change:{change_id}"` (stable unique ID) |
+
+Feed-level metadata:
+- Title: "Open Data Encyclopedia - Catalog Changes"
+- Link: `"{base_url}/changes/"`
+- Description: "New, removed, and schema-changed datasets from South Florida open data portals"
+- Max entries: 50 most recent (keeps feed size manageable)
+
+### Estimated Complexity: LOW
+
+One new ~80-line module. No schema changes. No new CLI commands. Two template edits.
+
+---
+
+## Feature 2: Downloadable Enriched Catalog (JSON + CSV)
+
+### Integration Point
+
+Another **new output artifact** of the `export` command. Reads from the same `build_site_data()` output that already joins datasets + enrichments + audit_scores.
+
+### Architecture Decision
+
+Generate as static files during `export`, placed in `site/downloads/`. Rationale: same as RSS -- these are site artifacts consumed via download links. Users access them from the website.
+
+### New Component
+
+```
+src/mdc_encyclopedia/site/catalog_export.py    (NEW)
+```
+
+### Data Flow
+
+```
+export command
+  |
+  +-- site/context.py::build_site_data()   (existing)
+  |        |
+  |        v
+  |   site_data["datasets"]  (full list with enrichment + audit + columns)
+  |
+  +-- site/catalog_export.py::export_catalog(datasets, output_dir)  (NEW)
+         |
+         +-- Build flat list of dicts: id, title, description, ai_description,
+         |   category, department, publisher, format, updated_at, letter_grade,
+         |   composite_score, civic_relevance, use_cases (joined), keywords (joined),
+         |   column_count, source_url, download_url, jurisdiction
+         |
+         +-- json.dump() -> site/downloads/catalog.json
+         +-- csv.DictWriter() -> site/downloads/catalog.csv
+```
+
+### Schema Changes
+
+None. All data is already in the database. The export is a different *view* of existing data.
+
+### Template Changes
+
+- `about.html` or new `downloads/index.html`: Add download links for JSON and CSV
+- `base.html` nav: Consider adding "Downloads" link (or include on About page)
+
+### New Dependencies
+
+None. Python `json` and `csv` modules are stdlib.
+
+### Export Schema Design
+
+**JSON structure:**
+```json
+{
+  "metadata": {
+    "generated_at": "2026-02-26T06:00:00Z",
+    "total_datasets": 636,
+    "jurisdictions": ["miami-dade", "broward", "city-of-miami"],
+    "version": "1.1"
+  },
+  "datasets": [
+    {
+      "id": "abc123",
+      "title": "Fire Stations",
+      "jurisdiction": "miami-dade",
+      "ai_description": "...",
+      "use_cases": ["...", "..."],
+      "keywords": ["...", "..."],
+      "department": "Fire Rescue",
+      "category": "Public Safety",
+      "civic_relevance": "HIGH",
+      "letter_grade": "A",
+      "composite_score": 0.92,
+      "publisher": "...",
+      "format": "Feature Service",
+      "updated_at": "2026-01-15T...",
+      "source_url": "https://...",
+      "download_url": "https://...",
+      "column_count": 15,
+      "columns": [
+        {"name": "OBJECTID", "type": "integer", "description": "...", "ai_description": "..."}
+      ]
+    }
+  ]
+}
+```
+
+**CSV structure:** Same fields, flattened. `use_cases` and `keywords` as semicolon-delimited strings. `columns` excluded from CSV (too complex for flat format; available in JSON).
+
+### Estimated Complexity: LOW
+
+One new ~100-line module. No schema changes. Stdlib-only. One or two template edits.
+
+---
+
+## Feature 3: AI Field-Level Descriptions (B+ Datasets)
+
+### Integration Point
+
+Extension of the existing **enrichment pipeline**. New Pydantic model, new prompt, new DB column, new CLI command. Renders in the existing `dataset.html` template's columns table.
+
+### Architecture Decision
+
+Implement as a new CLI command `enrich-fields` rather than a flag on `enrich`. Rationale: field-level enrichment has different scoping (B+ datasets only), different cost profile (many more API calls), and different resume semantics. Separating it makes the pipeline easier to control in CI.
+
+### New/Modified Components
+
+```
+src/mdc_encyclopedia/enrichment/field_prompts.py    (NEW)
+src/mdc_encyclopedia/enrichment/field_models.py     (NEW)
+src/mdc_encyclopedia/enrichment/client.py           (MODIFIED - add enrich_fields function)
+src/mdc_encyclopedia/db.py                          (MODIFIED - schema V3 + new queries)
+src/mdc_encyclopedia/cli.py                         (MODIFIED - add enrich-fields command)
+src/mdc_encyclopedia/site/context.py                (MODIFIED - include ai_description in columns)
+```
+
+### Data Flow
+
+```
+enrich-fields command
+  |
+  +-- Query: datasets with audit grade IN ('A', 'B')
+  |          AND columns exist
+  |          AND columns.ai_description IS NULL (at least one undescribed)
+  |
+  +-- For each eligible dataset:
+  |     +-- Fetch columns for dataset (existing db.get_columns_for_dataset)
+  |     +-- Build field enrichment prompt (all column names + types + dataset context)
+  |     +-- Call Claude API with FieldEnrichmentResult model
+  |     +-- UPDATE columns SET ai_description = ? WHERE dataset_id = ? AND name = ?
+  |
+  +-- Summary: enriched N datasets, M columns, cost $X
+```
+
+### Schema Changes
+
+**Schema V3 upgrade (partial -- combined with multi-jurisdiction changes below):**
+
+```sql
+ALTER TABLE columns ADD COLUMN ai_description TEXT;
+```
+
+This adds a single nullable column to the existing `columns` table. Existing rows get NULL, which the template handles gracefully (already shows `--` for missing descriptions).
+
+The `db.py` migration pattern is already established (`PRAGMA user_version` with `SCHEMA_V2_UPGRADE` as precedent). Add `SCHEMA_V3_UPGRADE` following the same pattern.
+
+### Prompt Design
+
+Send all columns for a dataset in one API call (not per-column). Rationale: columns are only meaningful in context of their dataset and sibling columns. A column named `FID` next to `ADDRESS` and `ZONE_CODE` in a zoning dataset gets a much better description than `FID` alone.
+
+System prompt (field-specific):
+```
+You are a data dictionary specialist for South Florida government datasets.
+For each column, write ONE plain-English sentence explaining what it contains
+and why a resident might care about it. Be specific to the dataset context.
+```
+
+User prompt:
+```
+Dataset: {title}
+About: {ai_description}
+Category: {category}, Department: {department}
+
+Describe each column:
+- OBJECTID (integer)
+- ADDRESS (text)
+- ZONE_CODE (text)
+...
+```
+
+Response model:
+
 ```python
-@click.group()
-def cli():
-    """MDC Open Data Encyclopedia CLI."""
-    pass
-
-@cli.command()
-@click.option("--db", default="data/mdc_encyclopedia.db")
-def pull(db):
-    """Pull metadata from Socrata + ArcGIS Hub."""
-    database = sqlite_utils.Database(db)
-    socrata_datasets = socrata_client.fetch_all()
-    arcgis_datasets = arcgis_client.fetch_all()
-    storage.upsert_datasets(database, socrata_datasets + arcgis_datasets)
-    click.echo(f"Pulled {len(socrata_datasets) + len(arcgis_datasets)} datasets.")
-
-@cli.command()
-@click.option("--db", default="data/mdc_encyclopedia.db")
-@click.option("--dry-run", is_flag=True)
-@click.option("--resume", is_flag=True, default=True)
-def enrich(db, dry_run, resume):
-    """AI-enrich datasets with Claude."""
-    # ...
-```
-
-### Pattern 2: Normalize-at-Ingestion (Common Schema from Heterogeneous Sources)
-
-**What:** Socrata and ArcGIS return different JSON shapes. Each client normalizes its response into a common `DatasetRecord` dataclass before storage. The rest of the system never knows or cares which portal a dataset came from.
-**When to use:** Whenever ingesting from multiple API sources with different schemas.
-**Trade-offs:** (+) Downstream code (enrichment, audit, export) only deals with one schema. (-) Normalization logic must be maintained per source.
-
-**Example:**
-```python
-@dataclass
-class DatasetRecord:
-    id: str                     # Unique across both portals
-    source: str                 # "socrata" or "arcgis"
+class FieldDescription(pydantic.BaseModel):
     name: str
-    description: str | None
-    category: str | None
-    tags: list[str]
-    owner_department: str | None
-    created_at: str
-    updated_at: str
-    record_count: int | None
-    columns: list[ColumnRecord]
-    portal_url: str             # Direct link back to source portal
+    description: str  # 1-sentence plain English
+
+class FieldEnrichmentResult(pydantic.BaseModel):
+    fields: list[FieldDescription]
 ```
 
-### Pattern 3: Baked Data (SQLite as Build Artifact)
+### Cost Estimation
 
-**What:** Inspired by Simon Willison's Datasette ecosystem. The SQLite database is a portable, self-contained build artifact. The static site is "baked" from it. The DB can be inspected locally with any SQLite tool (DB Browser, `sqlite-utils`, `datasette`).
-**When to use:** Any project where data is collected/processed offline and then published as static output.
-**Trade-offs:** (+) Single file, works everywhere, no server needed, inspectable. (-) Not suitable for real-time writes (not needed here).
+- 125 B+ datasets, average ~21 columns each (2,635 total columns)
+- Estimated ~300 input tokens per dataset + ~20 tokens per column = ~720 tokens avg
+- Estimated ~30 output tokens per column = ~630 tokens avg
+- Total: ~90K input + ~79K output tokens
+- At Haiku 4.5 pricing ($1/$5 per MTok): ~$0.49
+- Very affordable. No cost threshold concerns.
 
-## Data Flow
+### Template Changes
 
-### Primary Pipeline Flow
+- `dataset.html`: In the columns table, add a 4th column "AI Description" showing `col.ai_description` when present
+- Alternatively, replace the existing `Description` column with AI description when available, falling back to the ArcGIS alias
 
-```
-[Socrata Discovery API]     [ArcGIS Hub API v3]
-    │ (paginate, 100/req)       │ (paginate, page/per_page)
-    │ + per-dataset /views      │
-    ▼                           ▼
-┌─────────────────────────────────────┐
-│  Normalize → DatasetRecord objects  │  ← clients/ layer
-└──────────────────┬──────────────────┘
-                   │ upsert
-                   ▼
-┌─────────────────────────────────────┐
-│  SQLite DB (datasets, columns)      │  ← storage/ layer
-└──────────────────┬──────────────────┘
-                   │ read unenriched
-                   ▼
-┌─────────────────────────────────────┐
-│  Claude API enrichment              │  ← enrichment/ layer
-│  (descriptions, use cases, tags)    │
-│  Write back → enrichments table     │
-└──────────────────┬──────────────────┘
-                   │ read all
-                   ▼
-┌─────────────────────────────────────┐
-│  Audit engine                       │  ← audit/ layer
-│  (staleness, completeness, quality) │
-│  Write back → audit_scores table    │
-└──────────────────┬──────────────────┘
-                   │ read all
-                   ▼
-┌─────────────────────────────────────┐
-│  Diff engine                        │  ← diff/ layer
-│  (compare snapshots: new/removed/   │
-│   schema changes)                   │
-│  Write back → changes table         │
-└──────────────────┬──────────────────┘
-                   │ read all
-                   ▼
-┌─────────────────────────────────────┐
-│  Static Site Builder                │  ← export/ layer
-│  Jinja2 templates → HTML pages      │
-│  Build Lunr.js JSON search index    │
-│  Copy CSS/JS assets                 │
-└──────────────────┬──────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────┐
-│  Output directory (docs/ or _site/) │
-│  → GitHub Pages / any static host   │
-└─────────────────────────────────────┘
+### Estimated Complexity: MEDIUM
+
+New prompt/model files, one schema migration, new CLI command with cost estimation, template update. The enrichment client pattern is already established so this is mostly copy-and-adapt.
+
+---
+
+## Feature 4: Multi-Jurisdiction Support
+
+### Integration Point
+
+This is the most **cross-cutting** feature. It touches ingestion, normalization, DB schema, diffing, site generation, templates, search index, and CI pipeline.
+
+### Architecture Decision
+
+Use a **jurisdiction registry** pattern -- a configuration dict mapping jurisdiction slugs to their portal URLs and display names. This avoids hardcoding and makes adding future jurisdictions trivial. The `source_portal` column in the datasets table (currently always `"arcgis_hub"`) gets repurposed to store the jurisdiction slug.
+
+### Jurisdiction Registry
+
+```python
+# src/mdc_encyclopedia/jurisdictions.py  (NEW)
+
+JURISDICTIONS = {
+    "miami-dade": {
+        "name": "Miami-Dade County",
+        "hub_base_url": "https://opendata.miamidade.gov",
+        "short_name": "MDC",
+    },
+    "broward": {
+        "name": "Broward County",
+        "hub_base_url": "https://geohub-bcgis.opendata.arcgis.com",
+        "short_name": "Broward",
+    },
+    "city-of-miami": {
+        "name": "City of Miami",
+        "hub_base_url": "https://datahub-miamigis.opendata.arcgis.com",
+        "short_name": "Miami",
+    },
+}
+
+DEFAULT_JURISDICTIONS = ["miami-dade"]  # Backward compatible default
 ```
 
-### Key Data Flows
-
-1. **Ingestion flow:** API responses (JSON) -> normalized DatasetRecord -> SQLite `datasets` and `columns` tables. Socrata requires two calls per dataset (Discovery API for catalog + `/api/views/{id}.json` for column metadata). ArcGIS returns columns (called `fields`) in the dataset response itself.
-
-2. **Enrichment flow:** Read unenriched dataset rows from SQLite -> construct Claude prompt with dataset metadata -> call Anthropic API -> parse structured response -> write to `enrichments` table. Resume support: query for datasets where `enrichment_status IS NULL OR enrichment_status = 'pending'`.
-
-3. **Export flow:** Read all tables (datasets + enrichments + audit_scores + changes) via SQL joins -> pass as context to Jinja2 templates -> render HTML files + build search JSON index -> write to output directory.
-
-4. **CI/CD flow (GitHub Actions):** Checkout -> `mdc-encyclopedia pull` -> `mdc-encyclopedia audit` -> `mdc-encyclopedia diff` -> (optionally) `mdc-encyclopedia enrich` -> `mdc-encyclopedia export` -> deploy output directory to GitHub Pages.
-
-## Scaling Considerations
-
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 0-500 datasets | Current architecture handles this trivially. Sequential API calls, single-threaded enrichment, full-site rebuild on every export. |
-| 500-2,000 datasets | May want concurrent API calls (asyncio + httpx) for pull speed. Enrichment benefits from Anthropic Batch API (50% cost reduction). Lunr.js index stays under 5MB -- fine for client-side. |
-| 2,000-10,000 datasets | Search index may exceed comfortable download size. Consider Fuse.js (lighter index) or server-side search. Enrichment cost becomes material (~$5-20 per full run). Incremental export (only re-render changed pages) becomes worthwhile. |
-| 10,000+ datasets | Unlikely for a single county. If reached, split search index by category, use service worker for caching, consider paginated HTML generation. |
-
-### Scaling Priorities
-
-1. **First bottleneck:** API pull speed. Socrata requires N+1 calls (1 catalog page per 100 datasets + 1 per-dataset column call). At 500 datasets, that is ~505 requests at 1/sec = ~8 minutes. Mitigation: cache aggressively, only re-fetch changed datasets on subsequent runs.
-2. **Second bottleneck:** Enrichment cost/time. At $0.003-0.01 per dataset (Haiku/Sonnet), 500 datasets costs $1.50-5.00. Use `--resume` to avoid re-enriching, and Batch API for bulk runs.
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Coupling API Client Logic to Storage
-
-**What people do:** Write Socrata API calls directly inside the CLI command handler, with `sqlite_utils.Database` imports in the client module.
-**Why it's wrong:** Cannot test API parsing without a database. Cannot swap storage layer. Cannot add a new data source without touching storage code.
-**Do this instead:** API clients return plain Python objects (dataclasses). Storage layer accepts those objects. CLI wires them together.
-
-### Anti-Pattern 2: Building the Search Index in Python
-
-**What people do:** Use a Python Lunr port to build the search index, avoiding Node.js entirely.
-**Why it's wrong:** The Python `lunr` package exists but is less maintained than the canonical JS library. More importantly, the client-side search loads `lunr.js` anyway -- if the index was built with a different implementation, subtle incompatibilities can occur.
-**Do this instead:** Build the search index with Node.js `lunr` at export time (a 10-line script). Or use the Python `lunr` library only if you verify version compatibility with the client-side `lunr.js` you ship. A pragmatic alternative: use Fuse.js, which takes raw JSON (no pre-built index needed), so the "build step" is just writing a JSON file from Python.
-
-### Anti-Pattern 3: Storing Enrichments Inline with Dataset Metadata
-
-**What people do:** Add AI-generated columns directly to the `datasets` table.
-**Why it's wrong:** Enrichments are expensive to regenerate. If a `pull` overwrites the row, enrichments are lost. Enrichments have their own lifecycle (can be regenerated, versioned, reviewed).
-**Do this instead:** Separate `enrichments` table with a foreign key to `datasets.id`. Pull can freely upsert `datasets` without touching enrichments. Enrichment status tracked independently.
-
-### Anti-Pattern 4: Full Site Rebuild for One Dataset Change
-
-**What people do:** Re-render every HTML page on every export, even if only 3 datasets changed.
-**Why it's wrong:** At 500+ datasets, full rebuild takes noticeable time and generates unnecessary git churn in the Pages repo.
-**Do this instead:** Track `last_modified` per dataset. On export, only re-render pages for datasets modified since last export. Always rebuild index pages (index, categories, changes, quality report) since they aggregate.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Socrata Discovery API | REST GET with pagination (`limit=100&offset=N`) | Rate limit: 1 req/sec. No auth required for public catalog. App token optional but recommended. |
-| Socrata Views API | REST GET `/api/views/{id}.json` per dataset | Returns column metadata (name, type, description). Same rate limit. |
-| ArcGIS Hub API v3 | REST GET with `page` and `per_page` params | Filter by domain: `?filter[source]=gis-mdc.opendata.arcgis.com`. Returns `fields` array with column metadata inline. |
-| Anthropic Claude API | Python SDK `anthropic.Anthropic().messages.create()` | Use Haiku for cost efficiency (descriptions) or Sonnet for nuanced enrichment. Support Batch API for bulk. |
-| GitHub Pages | Static file deployment via `gh-pages` branch or `/docs` folder | GitHub Actions pushes built site. No server-side logic. |
-| GitHub Actions | Cron-triggered workflow (weekly) | `pull` -> `audit` -> `diff` -> `enrich` (optional) -> `export` -> deploy |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| CLI <-> Clients | Function calls returning dataclasses | CLI passes options (db path, rate limit); clients return `list[DatasetRecord]` |
-| CLI <-> Storage | `sqlite-utils.Database` object passed as argument | All modules receive the DB handle from CLI; never create their own |
-| CLI <-> Enrichment | Function calls with DB handle + options | Enrichment reads from DB, writes back to DB. CLI controls dry-run/resume flags |
-| Storage <-> Export | Read-only SQL queries | Export never writes to DB. Reads joined views of datasets + enrichments + audits |
-| Export <-> Static Output | File writes to output directory | Builder writes HTML/JSON/CSS. Serve command runs `python -m http.server` on output dir |
-
-## Build Order (Dependency Chain)
-
-Based on the component boundaries and data flow above, the recommended build order is:
+### New/Modified Components
 
 ```
-Phase 1: Storage Layer + Models
-   │      (schema, DB init, dataclasses — everything else depends on this)
-   ▼
-Phase 2: API Clients (Socrata + ArcGIS)
-   │      (depends on: storage models for normalization target)
-   ▼
-Phase 3: CLI Skeleton + Pull Command
-   │      (depends on: clients + storage — first end-to-end working pipeline)
-   ▼
-Phase 4: Audit + Diff Engines
-   │      (depends on: storage with data from pull — pure logic, no external APIs)
-   ▼
-Phase 5: AI Enrichment Engine
-   │      (depends on: storage with data — adds Claude API dependency)
-   ▼
-Phase 6: Static Site Builder (Jinja2 + Search Index)
-   │      (depends on: storage with enrichments + audits — reads everything, writes HTML)
-   ▼
-Phase 7: GitHub Actions CI/CD
-          (depends on: all commands working — orchestrates the full pipeline)
+src/mdc_encyclopedia/jurisdictions.py               (NEW)
+src/mdc_encyclopedia/ingestion/hub_client.py         (MODIFIED)
+src/mdc_encyclopedia/ingestion/normalizer.py         (MODIFIED)
+src/mdc_encyclopedia/ingestion/field_fetcher.py      (MODIFIED - pass client with correct base_url)
+src/mdc_encyclopedia/db.py                           (MODIFIED - schema V3 + jurisdiction index)
+src/mdc_encyclopedia/diff/detector.py                (MODIFIED - per-jurisdiction snapshots)
+src/mdc_encyclopedia/site/context.py                 (MODIFIED - jurisdiction grouping + filter data)
+src/mdc_encyclopedia/site/generator.py               (MODIFIED - jurisdiction filter pages)
+src/mdc_encyclopedia/site/search_index.py            (MODIFIED - include jurisdiction in index)
+src/mdc_encyclopedia/site/templates/base.html        (MODIFIED - jurisdiction in nav/title)
+src/mdc_encyclopedia/site/templates/browse.html      (MODIFIED - jurisdiction filter dropdown)
+src/mdc_encyclopedia/site/templates/dataset.html     (MODIFIED - show jurisdiction badge)
+src/mdc_encyclopedia/site/templates/index.html       (MODIFIED - per-jurisdiction stats)
+src/mdc_encyclopedia/site/static/filter.js           (MODIFIED - jurisdiction filter logic)
+src/mdc_encyclopedia/cli.py                          (MODIFIED - --jurisdiction flag on pull)
+.github/workflows/encyclopedia.yml                   (MODIFIED - pull for each jurisdiction)
 ```
 
-**Build order rationale:**
-- Storage first because every other component reads/writes through it.
-- Clients second because you need real data to test everything downstream.
-- CLI + Pull third to establish the end-to-end "pull data into DB" loop early.
-- Audit/Diff before enrichment because they are pure logic (no API cost, fast to iterate).
-- Enrichment after audit because you may want audit scores to inform enrichment prompts.
-- Export last because it consumes everything upstream.
-- CI/CD last because it orchestrates commands that must already exist.
+### Data Flow Changes
+
+**Ingestion (pull command):**
+
+```
+pull --jurisdiction miami-dade broward city-of-miami
+  |
+  +-- For each jurisdiction slug:
+        +-- Look up JURISDICTIONS[slug]
+        +-- create_client(base_url=jurisdiction["hub_base_url"])  <-- CHANGED
+        +-- fetch_all_datasets(client)
+        +-- normalize_hub_dataset(feature, jurisdiction=slug)     <-- CHANGED
+        +-- upsert_dataset(conn, normalized)
+        +-- fetch_fields_for_dataset(client, ...)
+```
+
+**Key change to hub_client.py:**
+
+```python
+# BEFORE (hardcoded)
+HUB_BASE_URL = "https://opendata.miamidade.gov"
+
+def create_client() -> httpx.Client:
+    return httpx.Client(base_url=HUB_BASE_URL, ...)
+
+# AFTER (parameterized)
+def create_client(base_url: str) -> httpx.Client:
+    return httpx.Client(base_url=base_url, ...)
+```
+
+**Key change to normalizer.py:**
+
+```python
+# BEFORE (hardcoded source_url)
+"source_portal": "arcgis_hub",
+"source_url": f"https://opendata.miamidade.gov/datasets/{feature_id}",
+
+# AFTER (jurisdiction-aware)
+"source_portal": jurisdiction_slug,  # e.g., "miami-dade"
+"source_url": f"{hub_base_url}/datasets/{feature_id}",
+```
+
+### Schema Changes
+
+**Schema V3 (combined with field AI description):**
+
+```sql
+-- Add ai_description to columns
+ALTER TABLE columns ADD COLUMN ai_description TEXT;
+
+-- Add index on source_portal for jurisdiction filtering
+CREATE INDEX IF NOT EXISTS idx_datasets_source_portal ON datasets(source_portal);
+
+-- Migrate existing data to use jurisdiction slug
+UPDATE datasets SET source_portal = 'miami-dade' WHERE source_portal = 'arcgis_hub';
+```
+
+Note: The existing `source_portal` column is reused. Currently all rows have value `"arcgis_hub"`. A data migration step updates existing rows. No new columns needed on the `datasets` table -- `source_portal` already serves as the jurisdiction identifier.
+
+### Diff/Change Detection
+
+The `diff/detector.py` currently takes a full-database snapshot. With multi-jurisdiction support, the snapshot should be per-jurisdiction to avoid cross-jurisdiction noise (e.g., Broward's first pull shouldn't show 83 "added" changes mixing with Miami-Dade's stable catalog).
+
+```python
+# BEFORE
+pre_snapshot = capture_snapshot(conn)
+
+# AFTER
+pre_snapshot = capture_snapshot(conn, jurisdiction="broward")
+# Filters: SELECT id FROM datasets WHERE source_portal = ?
+```
+
+### Site Generation Changes
+
+**Unified catalog with jurisdiction filter:**
+
+The site remains a single static site (not separate sites per jurisdiction). The browse page gets a jurisdiction filter dropdown alongside existing format/publisher/tag filters.
+
+```
+Homepage:
+  - Stats cards: "636 datasets across 3 jurisdictions"
+  - Per-jurisdiction stat chips: "MDC: 470 | Broward: 83 | Miami: 83"
+
+Browse page:
+  - Jurisdiction filter dropdown (Miami-Dade, Broward, City of Miami, All)
+  - Existing filters (format, publisher, tags) remain
+  - Dataset cards show jurisdiction badge
+
+Dataset detail page:
+  - Jurisdiction badge in header
+  - Source link uses correct portal URL
+
+Search:
+  - Jurisdiction added as searchable/filterable field in Lunr index
+  - Search data includes jurisdiction for display
+
+Footer:
+  - Update data source links to list all three portals
+```
+
+### CI Pipeline Changes
+
+```yaml
+# BEFORE
+- name: Pull latest data
+  run: mdc-encyclopedia pull
+
+# AFTER
+- name: Pull latest data
+  run: mdc-encyclopedia pull --jurisdiction miami-dade broward city-of-miami
+```
+
+### Dedup Across Jurisdictions
+
+The existing `detect_duplicate_titles` function operates within a single pull. With multi-jurisdiction support, the same dataset could appear on multiple portals (e.g., a County dataset re-published by a city). The dataset `id` is unique per portal (ArcGIS item ID), so there is no primary key collision. Cross-jurisdiction dedup is out of scope for v1.1 -- it can be a future enhancement if needed.
+
+### Estimated Complexity: HIGH
+
+Touches nearly every module. However, the changes within each module are modest (parameterizing what is currently hardcoded). The risk is in the breadth, not the depth.
+
+---
+
+## Component Boundary Map (v1.1)
+
+```
+CLI (cli.py)
+  |
+  +-- pull --jurisdiction X Y Z
+  |     |
+  |     +-- jurisdictions.py (NEW) -----------> jurisdiction registry lookup
+  |     +-- hub_client.py (MODIFIED) ---------> parameterized base_url
+  |     +-- normalizer.py (MODIFIED) ---------> jurisdiction-aware source_portal/source_url
+  |     +-- field_fetcher.py (MODIFIED) ------> uses client with correct base_url
+  |     +-- db.py (MODIFIED) -----------------> V3 schema, jurisdiction index
+  |     +-- diff/detector.py (MODIFIED) ------> per-jurisdiction snapshots
+  |
+  +-- enrich (UNCHANGED)
+  |
+  +-- enrich-fields (NEW)
+  |     +-- enrichment/field_prompts.py (NEW)
+  |     +-- enrichment/field_models.py (NEW)
+  |     +-- enrichment/client.py (MODIFIED)
+  |     +-- db.py (MODIFIED) -----------------> update columns.ai_description
+  |
+  +-- audit (UNCHANGED - works on all datasets regardless of jurisdiction)
+  |
+  +-- diff (MODIFIED - per-jurisdiction filtering in display)
+  |
+  +-- export (MODIFIED)
+  |     +-- site/generator.py (MODIFIED) -----> call feed + catalog_export
+  |     +-- site/context.py (MODIFIED) -------> jurisdiction grouping
+  |     +-- site/feed.py (NEW) ---------------> RSS/Atom XML generation
+  |     +-- site/catalog_export.py (NEW) -----> JSON/CSV catalog export
+  |     +-- site/search_index.py (MODIFIED) --> jurisdiction field in index
+  |     +-- templates (MODIFIED) -------------> jurisdiction UI
+  |
+  +-- stats (MODIFIED - per-jurisdiction breakdown)
+  +-- serve (UNCHANGED)
+```
+
+### New Files (6)
+
+| File | Purpose | Lines (est) |
+|------|---------|-------------|
+| `jurisdictions.py` | Jurisdiction registry | ~30 |
+| `site/feed.py` | RSS/Atom feed generation | ~80 |
+| `site/catalog_export.py` | JSON/CSV catalog export | ~100 |
+| `enrichment/field_prompts.py` | Field description prompt templates | ~60 |
+| `enrichment/field_models.py` | Pydantic model for field enrichment | ~25 |
+| templates (new/modified) | Jurisdiction UI elements | ~50 |
+
+### Modified Files (13)
+
+| File | Change Scope | Risk |
+|------|-------------|------|
+| `hub_client.py` | Parameterize `base_url` | LOW |
+| `normalizer.py` | Accept jurisdiction slug, build correct URLs | LOW |
+| `field_fetcher.py` | Accept client (already parameterized) | LOW |
+| `db.py` | V3 migration, new queries, jurisdiction index | MEDIUM |
+| `diff/detector.py` | Per-jurisdiction snapshot filtering | LOW |
+| `cli.py` | New command + `--jurisdiction` flag | MEDIUM |
+| `site/generator.py` | Call feed + catalog_export, jurisdiction subdirs | LOW |
+| `site/context.py` | Jurisdiction grouping in site data | MEDIUM |
+| `site/search_index.py` | Add jurisdiction to index fields | LOW |
+| `base.html` | RSS link, jurisdiction in title/footer | LOW |
+| `browse.html` | Jurisdiction filter dropdown | LOW |
+| `dataset.html` | Jurisdiction badge, AI field descriptions | LOW |
+| `encyclopedia.yml` | Multi-jurisdiction pull command | LOW |
+
+---
+
+## Database Schema V3
+
+```sql
+-- Migration from V2 to V3
+-- Step 1: Add AI description column to columns table
+ALTER TABLE columns ADD COLUMN ai_description TEXT;
+
+-- Step 2: Create index on source_portal for jurisdiction filtering
+CREATE INDEX IF NOT EXISTS idx_datasets_source_portal ON datasets(source_portal);
+
+-- Step 3: Migrate existing data to use jurisdiction slug
+UPDATE datasets SET source_portal = 'miami-dade' WHERE source_portal = 'arcgis_hub';
+```
+
+Implementation in `db.py`:
+```python
+CURRENT_SCHEMA_VERSION = 3
+
+SCHEMA_V3_UPGRADE = """
+ALTER TABLE columns ADD COLUMN ai_description TEXT;
+CREATE INDEX IF NOT EXISTS idx_datasets_source_portal ON datasets(source_portal);
+UPDATE datasets SET source_portal = 'miami-dade' WHERE source_portal = 'arcgis_hub';
+"""
+```
+
+Full schema after V3:
+
+| Table | Columns | Changes in V3 |
+|-------|---------|---------------|
+| `datasets` | id, source_portal, source_url, title, description, category, publisher, format, created_at, updated_at, row_count, tags, license, api_endpoint, bbox, download_url, metadata_json, pulled_at | `source_portal` repurposed (now stores jurisdiction slug), new index |
+| `columns` | id, dataset_id, name, data_type, description, **ai_description** | **NEW: ai_description TEXT** |
+| `enrichments` | (unchanged) | -- |
+| `audit_scores` | (unchanged) | -- |
+| `changes` | (unchanged) | -- |
+
+---
+
+## Suggested Build Order
+
+Based on dependency analysis and risk:
+
+### Phase 1: Multi-Jurisdiction Foundation (build first -- everything else depends on it)
+
+1. **`jurisdictions.py`** -- jurisdiction registry (no dependencies)
+2. **`db.py` V3 migration** -- schema changes needed before any data flows
+3. **`hub_client.py`** -- parameterize `base_url` (backwards compatible)
+4. **`normalizer.py`** -- jurisdiction-aware normalization
+5. **`cli.py` pull --jurisdiction** -- wire up the new flow
+6. **`diff/detector.py`** -- per-jurisdiction snapshots
+7. **Test:** Pull from all 3 portals, verify data in DB with correct jurisdiction slugs
+
+### Phase 2: RSS/Atom Feed (lowest risk, highest user visibility)
+
+1. **`site/feed.py`** -- feed generation module
+2. **`site/generator.py`** -- call feed generator during export
+3. **Template updates** -- RSS link in head/nav
+4. **`pyproject.toml`** -- add `feedgen` dependency
+5. **Test:** Verify feed.xml and rss.xml validate, render in feed reader
+
+### Phase 3: Enriched Catalog Export (low risk, no new deps)
+
+1. **`site/catalog_export.py`** -- JSON + CSV export
+2. **`site/generator.py`** -- call catalog export during export
+3. **Template updates** -- download links on about/downloads page
+4. **Test:** Verify JSON schema, CSV opens in Excel/Sheets
+
+### Phase 4: Field-Level AI Descriptions (highest cost, most new code)
+
+1. **`enrichment/field_prompts.py`** -- field enrichment prompt
+2. **`enrichment/field_models.py`** -- Pydantic model
+3. **`enrichment/client.py`** -- add `enrich_fields` function
+4. **`cli.py` enrich-fields** -- new command with dry-run, cost estimation
+5. **`site/context.py`** -- include `ai_description` in column data
+6. **`dataset.html`** -- show AI descriptions in columns table
+7. **Test:** Dry-run cost estimate, enrich 5 datasets, verify on site
+
+### Phase 5: Site UI Polish (depends on all above)
+
+1. **Jurisdiction filter** on browse page (JS + template)
+2. **Homepage stats** per jurisdiction
+3. **Search index** jurisdiction field
+4. **CI pipeline** update for multi-jurisdiction
+5. **Test:** Full end-to-end: pull all jurisdictions, enrich, audit, export, verify site
+
+### Rationale for This Order
+
+- **Multi-jurisdiction first** because the RSS feed and catalog export should include jurisdiction data from day one. Building them before multi-jurisdiction means reworking them later.
+- **RSS before export** because RSS has an external dependency (feedgen) worth validating early.
+- **Export before field AI** because export has zero risk and can ship independently.
+- **Field AI last** because it has the highest complexity and cost, and the site works fine without it. It also benefits from having multi-jurisdiction data already in the DB (more B+ datasets from new jurisdictions could become eligible).
+
+---
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Separate DBs Per Jurisdiction
+**What:** Creating a separate SQLite database for each jurisdiction.
+**Why bad:** Breaks unified catalog. Makes cross-jurisdiction queries impossible. Triples CI complexity.
+**Instead:** Single DB with `source_portal` as jurisdiction discriminator. One `export` produces one site.
+
+### Anti-Pattern 2: Feed Generation as a Separate CLI Command
+**What:** `mdc-encyclopedia feed` as a standalone command.
+**Why bad:** Feed is a site artifact. Separate command means CI must know to run it. Easy to forget. Feed falls out of sync with site.
+**Instead:** Generate feed inside `export` command. Feed is always in sync with site content.
+
+### Anti-Pattern 3: Per-Column API Calls for Field Descriptions
+**What:** Calling Claude once per column to generate descriptions.
+**Why bad:** 2,635 columns = 2,635 API calls. At 1 call/sec = 44 minutes. Rate limit risk. Cost overhead from repeated system prompts.
+**Instead:** Batch all columns for a dataset into one API call. 125 calls total. ~2 minutes.
+
+### Anti-Pattern 4: Async Rewrite for Multi-Portal
+**What:** Converting to async httpx for concurrent pulls across portals.
+**Why bad:** Over-engineering. Each portal has 1 req/s rate limit. Concurrent requests just hit rate limits faster. Complexity of async for no performance gain.
+**Instead:** Sequential pulls per jurisdiction. 83 datasets at 1 req/s = ~2 minutes per new portal. Total pipeline remains under 15 minutes.
+
+### Anti-Pattern 5: Dynamic Jurisdiction Filtering (JavaScript Only)
+**What:** Loading all datasets and filtering client-side only.
+**Why bad:** Works for 636 datasets, but browse page HTML will be large. More importantly, if a user wants "just Broward" they have to load everything.
+**Instead:** Hybrid -- render all datasets with data-jurisdiction attributes, and use client-side JS filter for interactive use. Static pages are fine at 636 datasets since the browse page already renders all 470 Miami-Dade datasets today.
+
+---
+
+## Scalability Considerations
+
+| Concern | Current (470 datasets) | v1.1 (~636 datasets) | At 2,000 datasets |
+|---------|----------------------|---------------------|-------------------|
+| DB size | 3.8 MB | ~5 MB | ~15 MB |
+| Pull time | ~8 min | ~12 min (3 portals) | ~30 min |
+| Export time | ~5 sec | ~8 sec | ~20 sec |
+| Search index | ~200 KB | ~300 KB | ~1 MB |
+| Site files | ~480 pages | ~650 pages | ~2100 pages |
+| GitHub repo size | ~4 MB | ~6 MB | ~18 MB |
+| Feed XML | N/A | ~20 KB | ~30 KB |
+| Catalog JSON | N/A | ~500 KB | ~2 MB |
+| Catalog CSV | N/A | ~200 KB | ~800 KB |
+
+No scalability concerns at v1.1 scope. The architecture scales linearly. The committed-DB-to-repo pattern starts to feel heavy above ~50 MB, which would require ~3,000+ datasets with full metadata -- well beyond v1.1 scope.
+
+---
 
 ## Sources
 
-- [Datasette Architecture (Architecture Notes)](https://architecturenotes.co/p/datasette-simon-willison) -- Datasette's "baked data" pattern, SQLite as deployment artifact, plugin architecture -- HIGH confidence
-- [sqlite-utils (Simon Willison)](https://github.com/simonw/sqlite-utils) -- Python CLI + library for SQLite manipulation, schema inference from dicts -- HIGH confidence
-- [Socrata Discovery API](https://dev.socrata.com/docs/other/discovery) -- Catalog enumeration endpoint, pagination at 100 results -- MEDIUM confidence (official docs sparse)
-- [ArcGIS Open Data API (unofficial docs)](https://gist.github.com/haoliangyu/0d0abcccfd3b25beb8b7597b4b2fc497) -- Hub API v3 endpoints, pagination, metadata fields -- MEDIUM confidence (unofficial gist)
-- [Lunr.js Pre-building Indexes](https://lunrjs.com/guides/index_prebuilding.html) -- Build-time index generation pattern with Node.js -- HIGH confidence
-- [JKAN (Static Data Portal)](https://github.com/timwis/jkan) -- Jekyll-based static data catalog for GitHub Pages, proof that static data catalogs work -- HIGH confidence
-- [Anthropic Batch Processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing) -- Message Batches API for 50% cost reduction on bulk enrichment -- HIGH confidence
-- [Socrata Discovery API docs](https://dev.socrata.com/docs/other/discovery) -- Rate limits, pagination structure -- MEDIUM confidence
-- [ArcGIS Hub Python API](https://github.com/Esri/hub-py) -- Official Python interface (heavyweight; raw HTTP preferred for our use case) -- MEDIUM confidence
-
----
-*Architecture research for: Miami-Dade County Open Data Encyclopedia*
-*Researched: 2026-02-24*
+- Broward County GeoHub API: `https://geohub-bcgis.opendata.arcgis.com/api/search/v1/collections/dataset/items` -- verified live, 83 datasets, same OGC Records schema (HIGH confidence)
+- City of Miami Open Data GIS API: `https://datahub-miamigis.opendata.arcgis.com/api/search/v1/collections/dataset/items` -- verified live, 83 datasets, same OGC Records schema (HIGH confidence)
+- [python-feedgen 1.0.0](https://feedgen.kiesow.be/) -- stable, supports RSS 2.0 + Atom, file output (HIGH confidence)
+- [feedgen on PyPI](https://pypi.org/project/feedgen/) -- v1.0.0 released 2023-12-25 (HIGH confidence)
+- [ArcGIS Hub Search API definition](https://hub.arcgis.com/api/search/definition/) -- OGC API Records standard (HIGH confidence)
+- Existing codebase analysis: all source files in `src/mdc_encyclopedia/` read and analyzed (HIGH confidence)
+- DB query: 125 B+ datasets, 2,635 columns eligible for field descriptions (HIGH confidence)

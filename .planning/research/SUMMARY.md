@@ -1,230 +1,195 @@
 # Project Research Summary
 
-**Project:** Miami-Dade County Open Data Encyclopedia
-**Domain:** Open data catalog with AI enrichment (Python CLI + static site generator)
-**Researched:** 2026-02-24
+**Project:** Miami-Dade County Open Data Encyclopedia v1.1 — Regional Expansion
+**Domain:** Open data catalog / encyclopedia — additive feature milestone
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The Miami-Dade County Open Data Encyclopedia is a civic tech tool that catalogs, enriches, and publishes all datasets from Miami-Dade's two open data portals (Socrata and ArcGIS Hub) as a fully static, GitHub Pages-hosted website. Experts in this space build such tools using a pipeline-of-commands ETL architecture: a CLI tool ingests raw metadata into SQLite, enriches it with AI, runs quality audits, and exports a static site. This is an established pattern (see JKAN, Datasette's "baked data" philosophy, Simon Willison's sqlite-utils ecosystem) with well-documented tooling choices. The recommended stack — Click + sqlite-utils + Anthropic SDK + Jinja2 + Lunr.js — is purpose-built for exactly this use case, with no unnecessary dependencies.
+The v1.1 milestone extends the proven v1.0 architecture in four well-scoped directions: RSS/Atom feed generation for catalog changes, downloadable enriched catalog export (JSON + CSV), AI field-level column descriptions, and multi-jurisdiction support for Broward County and City of Miami. All four features build on the existing Python/SQLite/Anthropic stack. The research confirms zero new pip dependencies are required with the sole exception of `feedgen` — recommended despite the STACK.md finding against it because the RFC 822 date format pitfall for RSS 2.0 is a real correctness risk that feedgen resolves internally. Every other feature uses stdlib (`xml.etree.ElementTree`, `csv`, `json`, `datetime`) and existing dependencies. The v1.0 architecture's modular separation — ingestion, enrichment, audit, diff, site — creates natural insertion points for all four features with no rewrites required.
 
-The core value proposition is AI enrichment: converting cryptic government metadata into plain-English descriptions, use cases, and resident-focused keywords that no existing portal offers. The primary differentiators over existing portals are AI-generated descriptions, automated data quality scoring, a public "What Changed" diff page, and a unified cross-portal view spanning both Socrata and ArcGIS Hub. All table-stakes catalog features (search, browse by category, dataset detail pages, metadata display, source links, column info) are deliverable within the static-site constraint using client-side Lunr.js search with a pre-built JSON index.
+The recommended implementation order is: (1) multi-jurisdiction foundation, (2) RSS/Atom feed, (3) enriched catalog export, (4) AI field-level descriptions, (5) site UI polish and CI pipeline. Multi-jurisdiction must precede the other features because the RSS feed and catalog export should include jurisdiction metadata from day one — building them first and retrofitting later wastes effort. Multi-jurisdiction is also the most cross-cutting change, touching ingestion, normalization, DB schema, diff detection, site generation, and templates. However, the individual changes per file are modest parameterizations of currently hardcoded values (primarily converting `HUB_BASE_URL = "https://opendata.miamidade.gov"` into a configurable parameter). All three ArcGIS Hub portals (Miami-Dade, Broward, City of Miami) expose identical `/api/search/v1/collections/dataset/items` endpoints with the same OGC Records response schema — verified via live API calls. The existing `hub_client.py` and `normalizer.py` require minimal changes.
 
-The key risks are concentrated in two phases: data ingestion (Socrata's API has three independent pagination/completeness pitfalls and an in-progress SODA3 migration) and AI enrichment (cost blowout without dry-run controls, and prompt drift invalidating existing enrichments). Both are preventable with upfront architecture decisions — a thin SocrataClient abstraction, pagination assertions against resultSetSize, and an enrichment status table with prompt versioning. Build order is dictated by the dependency chain: storage schema must precede API clients, which must precede enrichment, which must precede static site export.
+The primary architectural risk is the Database Schema V3 migration. The current `datasets.id TEXT PRIMARY KEY` is portal-scoped, and adding multiple jurisdictions creates an ID collision risk (federated ArcGIS content could share UUIDs across portals, and `INSERT OR REPLACE` would silently overwrite one jurisdiction's data). This must be resolved with a synthetic composite key (`"{jurisdiction}:{original_id}"`) before any multi-portal data enters the database, and the migration must be tested against the committed production database with `PRAGMA foreign_key_check` to verify no enrichment or audit data is lost. City of Miami operates a second Socrata portal (`data.miamigov.com`) that is explicitly out of scope for v1.1 — the ArcGIS Hub portal covers GIS datasets, and adding a Socrata client would double the ingestion code surface for minimal gain at this milestone.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack is a tight, coherent Python ecosystem with no extraneous dependencies. Click provides the CLI framework (same ecosystem as sqlite-utils, Pallets foundation). sqlite-utils handles all SQLite operations with automatic schema inference, FTS5 support, and upsert — eliminating hundreds of lines of boilerplate. The Anthropic SDK's Message Batches API is critical for bulk enrichment at 50% cost reduction. Jinja2 handles templating with inheritance for layout/page hierarchy. lunr.py generates a compatible search index at build time in pure Python, avoiding a Node.js build dependency.
+No new pip dependencies are needed for v1.1 features, with one justified exception: `feedgen>=1.0.0` for RSS/Atom feed generation. The STACK.md research recommended against feedgen (citing an outdated concern about lxml dependency — feedgen's actual dependency is `python-dateutil`, not lxml), while PITFALLS.md identifies the RFC 822 date format requirement for RSS 2.0 as a real trap that feedgen resolves internally. Accept feedgen as the single new dependency. All other features use stdlib modules (`xml.etree.ElementTree` is suitable for Atom-only output but feedgen handles both formats and date conversion). The Schema V3 migration adds two SQL alterations to the existing `db.py` migration pattern: `ALTER TABLE columns ADD COLUMN ai_description TEXT` and a `CREATE INDEX` on `source_portal`.
 
 **Core technologies:**
-- **Python 3.12+**: Runtime — stable through 2028, best library compat
-- **Click 8.3.1**: CLI framework — decorator-based, same ecosystem as sqlite-utils, handles all subcommands cleanly
-- **sqlite-utils 3.39**: Database layer — Pythonic SQLite with FTS5, upsert, schema inference; purpose-built for this pattern
-- **Jinja2 3.1.6**: HTML templating — template inheritance for layout, battle-tested for static site generation
-- **Anthropic SDK >=0.83.0**: AI enrichment — Message Batches API for bulk runs at 50% cost discount
-- **httpx 0.28.1**: HTTP client — sync/async parity, connection pooling; use sync mode for rate-limited sequential API calls
-- **Rich 14.3.3**: Terminal output — progress bars, formatted tables, colored audit results
-- **lunr.py 0.8.0 + Lunr.js 2.3.9**: Search — Python builds index at export time, browser loads pre-built JSON; no Node.js needed
+- `feedgen>=1.0.0`: RSS 2.0 + Atom 1.0 feed generation — handles RFC 822/ISO 8601 date format conversion internally; single new dependency justified by correctness risk
+- `csv.DictWriter` + `json` (stdlib): JSON and CSV catalog export — zero new dependencies; `build_site_data()` already produces the joined dataset struct
+- Anthropic SDK (existing) + new `FieldEnrichmentResult` Pydantic model: Field-level AI descriptions — extends existing structured output pattern; same `messages.parse()` call
+- `httpx` (existing, parameterized): Multi-jurisdiction ArcGIS Hub ingestion — convert module-level constant to `create_client(base_url: str)` parameter
+- SQLite Schema V3: `ai_description` column on `columns` table + index on `source_portal` + data migration of existing rows from `"arcgis_hub"` to `"miami-dade"` slug
 
-**Do not use:** sodapy (Consumer API only, not Discovery API), SQLAlchemy (overkill), Flask/FastAPI (no server needed), Node.js build pipeline (lunr.py replaces it), Pandas (sqlite-utils + stdlib is sufficient).
+**Version requirements:** Python 3.12+, SQLite 3.41+ (shipped with Python 3.12). `ALTER TABLE ADD COLUMN` confirmed supported. No compilation-dependent packages introduced.
+
+**Do not add:** `lxml` (not needed; feedgen does not require it), `pandas` (stdlib `csv` + `json` are sufficient for export), `sodapy` (City of Miami Socrata is out of scope for v1.1), `aiohttp` / async patterns (three portals at 1 req/sec each = ~12 min total sequential pull; acceptable for weekly CI runs), `python-feedgen` installed via old feedgen path (install as `feedgen`, not `python-feedgen`).
 
 ### Expected Features
 
-The feature research confirms the MVP is well-scoped. AI enrichment is not a nice-to-have — it IS the product. Without it, this is a worse version of the existing portals. The unified cross-portal view (Socrata + ArcGIS Hub) is the second major differentiator; no existing Miami-Dade tool does this.
-
 **Must have (table stakes):**
-- Full-text search — primary discovery mechanism; every catalog leads with it
-- Browse by category/theme — users narrow by topic, cannot browse hundreds of datasets manually
-- Individual dataset detail pages — atomic unit of a catalog; quality of these pages is where value lives
-- Dataset metadata display (title, description, publisher, format, last updated, tags)
-- Source portal deep links — broken links destroy trust; catalog is not a data host
-- Column/field information — critical for developers and journalists pre-download
-- Responsive/mobile layout — static site on GitHub Pages must work on phones
-- Filtering by format/publisher/tag — search alone insufficient for large catalogs
-- Freshness indicator — stale data without warning erodes trust
-- About/methodology/disclaimer page — transparency required for civic tech
+- Jurisdiction filter on browse page — without it, Broward/City of Miami datasets mix confusingly into Miami-Dade results
+- Jurisdiction badge on every dataset card and detail page — "Building Permits" is ambiguous without knowing the source government
+- Feed autodiscovery `<link rel="alternate">` in HTML `<head>` — standard browser and reader auto-detection
+- Feed linked from site navigation with RSS icon
+- Download links discoverable on About page — JSON and CSV exports must be findable without hunting
+- Field descriptions displayed inline in existing columns table on dataset detail page
+- Enrichment `--dry-run` cost estimate verified working for new jurisdiction datasets
 
 **Should have (differentiators):**
-- AI plain-English descriptions — #1 differentiator; no existing portal does this well
-- AI use cases ("Why you'd care") — transforms reference tool into actionable guide
-- Search keyword enrichment — maps government jargon to plain language residents actually search
-- Automated data quality scoring — pioneered by Toronto; makes catalog an accountability tool
-- Cross-portal unified view — Socrata + ArcGIS Hub as single searchable catalog
-- Diff detection + "What Changed" page — public changelog no portal currently offers
-- Department attribution browsing — AI-inferred; no Miami-Dade portal offers this today
-- Civic relevance scoring — enables "Most Relevant to Residents" browsing
-- Data quality report page — aggregate accountability dashboard
+- Schema change diffs in RSS feed — no open data portal surfaces column additions/removals as a subscribable feed; unique in the open data space
+- AI-enriched catalog export (JSON + CSV with DCAT-US v1.1 alignment) — richer than raw portal metadata; enables data.gov harvesting
+- Field-level plain-English column descriptions — enterprise catalogs do this internally; no public civic data portal does
+- Tri-county unified search — no existing tool unifies South Florida open data across Miami-Dade, Broward, and City of Miami
+- Per-jurisdiction quality score comparison — accountability metric across governments; falls out naturally from applying existing audit to new jurisdictions
 
-**Defer (v2+):**
-- RSS feed for changes — low-effort alerting, add after "What Changed" is validated
-- Downloadable catalog JSON/CSV — for developers wanting bulk access
-- Embeddable widgets — let other civic sites embed dataset cards
-- Multi-jurisdiction support — only after Miami-Dade is solid and there is demand
-
-**Anti-features to avoid:** data preview (build time blowout, goes stale), built-in visualization (scope explosion), user accounts (antithetical to static site), runtime API (requires server), real-time freshness checking (requires runtime calls from browser).
+**Defer to v1.2+:**
+- City of Miami Socrata portal (`data.miamigov.com`) — requires a separate `SocrataClient`, different metadata schema, cross-platform deduplication
+- DCAT-US v3.0 compliance — draft spec, not yet required; use v1.1 field names and migrate when finalized
+- Per-jurisdiction RSS feeds — single feed with jurisdiction-tagged entries is sufficient for initial subscriber base
+- Real-time feed updates (WebSub/PubSubHubbub) — static site architecture precludes push; weekly cadence makes this irrelevant
+- Column enrichment for sub-B datasets — garbage-in-garbage-out risk; expand threshold in v1.2 after prompt quality validation
+- Jurisdiction-specific enrichment system prompts — a `{jurisdiction}` variable in a single template is sufficient
 
 ### Architecture Approach
 
-The architecture is a pipeline-of-commands ETL system where each CLI command (pull, enrich, audit, diff, export) represents one independent but sequenced stage, with SQLite as the shared state between all stages. Socrata and ArcGIS clients normalize heterogeneous API responses into a common DatasetRecord schema before storage — downstream code (enrichment, audit, export) never knows which portal a dataset came from. Enrichments are stored in a separate table (not inline with datasets) so that pull can freely upsert without overwriting AI-generated content. The static site is "baked" from SQLite at export time: Jinja2 renders HTML pages and lunr.py builds the pre-serialized search JSON.
+The v1.1 architecture is additive rather than structural. Six new files (approximately 345 lines estimated) and thirteen existing files modified with contained, low-risk changes. The most important new abstraction is `jurisdictions.py` — a registry mapping jurisdiction slug keys to portal URLs and display names. This single-source-of-truth config replaces the hardcoded constants scattered across six files and ensures adding v1.2 jurisdictions requires only config changes. Feed and catalog export are generated inside the existing `generate_site()` function using the same `site_data` dict that drives HTML rendering, ensuring exports always match the published site content exactly.
 
-**Major components:**
-1. **CLI Layer (Click)** — user-facing commands, argument parsing, progress display via Rich; wires all other components together
-2. **API Clients (socrata.py + arcgis.py)** — each normalizes source-specific JSON into DatasetRecord dataclasses; Socrata requires N+1 calls (Discovery API + per-dataset /api/views/{id}.json)
-3. **Storage Layer (sqlite-utils)** — single SQLite file with datasets, columns, enrichments, audit_scores, changes tables; every component reads/writes through db.py
-4. **Enrichment Engine (Anthropic SDK)** — reads unenriched datasets from DB, submits Batch API requests, writes structured results back; tracks status per-dataset with prompt versioning
-5. **Audit Engine** — pure Python logic computing staleness, completeness, quality scores from SQLite data
-6. **Diff Engine** — SQL comparisons against versioned snapshots to detect new/removed/changed datasets
-7. **Site Builder (Jinja2 + lunr.py)** — reads all tables via SQL joins, renders HTML pages, builds search JSON index, copies static assets to output directory
+**Major components and v1.1 changes:**
+1. `jurisdictions.py` (NEW) — jurisdiction registry dict; all portal configuration in one place
+2. `ingestion/hub_client.py` (MODIFIED) — `create_client(base_url: str)` replaces `HUB_BASE_URL` module constant
+3. `ingestion/normalizer.py` (MODIFIED) — accepts `jurisdiction` parameter; builds correct `source_portal` and `source_url` per jurisdiction
+4. `db.py` (MODIFIED) — Schema V3: `ai_description` column on `columns`, `source_portal` index, data migration from `"arcgis_hub"` to `"miami-dade"` slug
+5. `diff/detector.py` (MODIFIED) — per-jurisdiction snapshot filtering to prevent cross-jurisdiction noise on first pull
+6. `site/feed.py` (NEW) — RSS/Atom generation via feedgen, called from `generate_site()`
+7. `site/catalog_export.py` (NEW) — JSON + CSV export, called from `generate_site()` using same `site_data` dict
+8. `enrichment/field_prompts.py` + `enrichment/field_models.py` (NEW) — field enrichment prompt templates and `FieldEnrichmentResult` Pydantic model
+9. Templates (MODIFIED) — jurisdiction badges, filter dropdown, RSS autodiscovery link, field description column, download links
 
-**Key pattern:** Normalize-at-ingestion. Separate enrichment table. Pipeline-of-commands with SQLite as shared state. Baked data output to docs/ or _site/ for GitHub Pages.
+**Key patterns to follow:**
+- Generate feed and export inside `generate_site()`, never as separate CLI commands — keeps pipeline simple and artifacts in sync
+- Batch all columns for a dataset into one API call, not per-column — 125 calls total vs 2,635
+- Sequential per-jurisdiction pulls, not async — rate limits are per-portal; sequential is fine for weekly CI
 
 ### Critical Pitfalls
 
-1. **Socrata Discovery API returns fewer datasets than exist** — The API defaults to `dataset` type only, silently filtering charts, maps, filtered views. Assert fetched count matches `resultSetSize`; compare against portal browse count on first pull. Decide explicitly which asset types to include and document in config. Affects Phase 1.
+1. **Dataset ID collision across jurisdictions** — the `datasets.id TEXT PRIMARY KEY` is portal-scoped; federated ArcGIS content could collide via `INSERT OR REPLACE`. Prevention: migrate to a synthetic key (`"{jurisdiction_slug}:{original_id}"`) in Schema V3 before any multi-portal pull. Test on a DB copy; verify `PRAGMA foreign_key_check` passes; confirm enrichment and audit counts are unchanged post-migration.
 
-2. **Pagination off-by-one and silent truncation** — Discovery API uses plain `limit`/`offset` (no dollar signs). Off-by-one returns suspiciously round numbers. Use `resultSetSize` from first response as the expected total; assert total fetched matches after pagination completes. Affects Phase 1.
+2. **RSS feed relative URLs break every feed reader** — the site uses relative `base_url` paths in Jinja2; feed readers do not resolve relative URLs. Prevention: define a separate `site_url` (full canonical URL) used exclusively in feed link elements; add `--site-url` to `export` command; fail loudly if absent rather than generating a broken feed silently.
 
-3. **AI enrichment cost blowout** — Testing with 10 datasets then running 800 without cost controls can generate unexpected $10-25+ bills. Implement `--dry-run` and `--cost-estimate` before any enrichment runs. Store enrichment status per-dataset in SQLite with `--resume` support. Add `--max-cost` hard cap. Affects Phase 2.
+3. **RSS 2.0 requires RFC 822 date format, not ISO 8601** — the codebase stores timestamps as ISO 8601; passing them directly into RSS `<pubDate>` breaks feed readers. Prevention: use feedgen which accepts Python `datetime` objects and handles format conversion; parse `detected_at` strings back into `datetime` objects before passing to feedgen.
 
-4. **Enrichment prompt drift invalidating existing enrichments** — Improving the prompt after a full run creates inconsistent quality across the catalog. Store `prompt_version` and `prompt_hash` with every enrichment record. Freeze the prompt before the first full-catalog run; iterate on 10-20 datasets first. Add `--upgrade-from-version` CLI command for targeted re-enrichment. Affects Phase 2.
+4. **Schema V3 migration data loss** — SQLite primary key changes require table recreation; dropping `datasets` with foreign keys enabled will cascade-delete all child rows. Prevention: `PRAGMA foreign_keys=OFF` during migration; migrate parent table before child tables; re-enable and run `PRAGMA foreign_key_check`.
 
-5. **Client-side search index too large for browser** — AI descriptions, column names, and use cases indexed naively can produce 2-5MB+ JSON. Index only title, AI keywords, department, and category — not full descriptions. Pre-build at export time via lunr.py. Target under 500KB. Measure after first full export. Affects Phase 4.
+5. **Field-level AI enrichment cost explosion** — output tokens scale with column count (not fixed like dataset enrichment); 2,635 columns across 125 B+ datasets estimated at ~$0.49 but this grows after multi-jurisdiction adds new B+ datasets. Prevention: always run `--dry-run` before batch; cap columns per call at 30; re-estimate after Phase 1 completes and new jurisdiction data is in DB.
 
-6. **SODA3 migration breaking Socrata integration** — Socrata defaulted to SODA3 in October 2025; SODA3 requires app tokens and changed endpoint patterns. Register a Socrata app token immediately. Isolate all Socrata calls behind a SocrataClient abstraction so endpoint changes require updating one module. Affects Phase 1.
-
-7. **ArcGIS Hub API v3 undocumented instability** — Minimal official docs; best reference is a 2019 unofficial gist. Use site-specific endpoint (`gis-mdc.opendata.arcgis.com/api/v3/datasets`). Cache raw API responses to disk before parsing. Implement response validation; fail loudly on missing fields. Affects Phase 1.
+6. **Field AI hallucination of column semantics** — ambiguous column names (e.g., `STATUS`, `FLD_ZONE`) produce plausible but wrong descriptions without sufficient context. Prevention: include dataset title, AI description, category, and department in the field enrichment prompt; add visible disclaimer and visual distinction (AI badge) on dataset detail page; keep portal-provided aliases in a separate display row.
 
 ## Implications for Roadmap
 
-Based on combined research, the architecture's build order dictates the roadmap phase structure. The dependency chain is strict: storage before clients before pull before enrichment before export. Each phase can be tested in isolation.
+Based on the dependency graph from FEATURES.md and the architecture build order from ARCHITECTURE.md, a 5-phase structure is recommended.
 
-### Phase 1: Foundation — Storage Schema + Project Skeleton
-**Rationale:** Every other component depends on the storage schema. Get this wrong and everything breaks on top of it. Architecture research explicitly puts this first. SQLite schema decisions (separate enrichments table, prompt_version column, migration version table) are harder to change later.
-**Delivers:** Working Python package with pyproject.toml, cli.py skeleton, storage/db.py with full schema (datasets, columns, enrichments, audit_scores, changes tables), DatasetRecord and ColumnRecord dataclasses, database initialization logic.
-**Addresses:** Foundation for all table-stakes features (metadata storage, column info, enrichment status)
-**Avoids:** Pitfall: "No migration strategy for SQLite schema" — schema version table from day one. Pitfall: "Storing enrichments inline with dataset metadata" — separate enrichments table from day one.
+### Phase 1: Multi-Jurisdiction Foundation
+**Rationale:** Every other feature benefits from having all jurisdictions in the catalog from day one. RSS and export built before multi-jurisdiction would need rework. This phase also contains the highest-risk element (Schema V3 migration and ID key strategy) — front-loading it limits downstream blast radius. City of Miami Socrata scope decision must also be documented explicitly here.
+**Delivers:** Unified catalog with Miami-Dade, Broward County, and City of Miami GIS datasets; `jurisdictions.py` registry; parameterized `hub_client.py`; Schema V3 (synthetic composite key, `ai_description` column, `source_portal` index, data migration); per-jurisdiction diff snapshots; `pull --jurisdiction` CLI option.
+**Addresses:** Multi-jurisdiction feature; dataset ID collision pitfall; hardcoded URL pitfall; City of Miami Socrata scope (document as out-of-scope in config).
+**Avoids:** Pitfalls 1 (ID collision), 4 (schema migration data loss). Establishes jurisdiction registry that prevents future hardcoding proliferation.
 
-### Phase 2: Data Ingestion — Socrata + ArcGIS Pull
-**Rationale:** Real data is required to test everything downstream. Cannot validate enrichment, audit, or export without actual catalog data. Architecture says clients come immediately after storage models.
-**Delivers:** SocrataClient (Discovery API pagination + per-dataset /api/views/{id}.json column metadata), ArcGISClient (Hub API v3 with site-specific filter), `mdc-encyclopedia pull` command, pagination with resultSetSize assertion, upsert into SQLite.
-**Uses:** httpx (sync mode, 1 req/sec rate limiting), Rich progress bars, python-slugify for IDs
-**Implements:** API Clients architecture component + Pull CLI command
-**Avoids:** Pitfall: "Discovery API returns fewer datasets than exist" — explicit asset type config, resultSetSize assertion. Pitfall: "Pagination off-by-one" — plain limit/offset, assertion against total. Pitfall: "SODA3 migration" — SocrataClient abstraction, app token from day one. Pitfall: "ArcGIS Hub instability" — response validation, raw response caching.
-**Research flag:** This phase needs deeper research. Socrata's SODA3 migration status for Miami-Dade specifically is uncertain. ArcGIS Hub API v3 docs are unofficial. Plan for discovery time.
+### Phase 2: RSS/Atom Feed
+**Rationale:** Second because it should include all jurisdictions' change events, and the `feedgen` dependency is worth validating early before investing further. RSS feed delivers clear user value (subscribable changelog) at LOW implementation complexity once Phase 1 is complete.
+**Delivers:** `site/feed.xml` (Atom 1.0) and `site/rss.xml` (RSS 2.0) generated inside `generate_site()`; max 25 most recent change entries; `<ttl>10080</ttl>` matching weekly cadence; autodiscovery link in HTML `<head>`; feed linked from site navigation; `--site-url` parameter on `export` command; feed XML validation in CI (`xmllint --noout`).
+**Uses:** `feedgen>=1.0.0`; existing `changes` table via `get_recent_changes(limit=25, order_by='detected_at DESC')`.
+**Avoids:** Pitfalls 2 (relative URLs), 3 (RFC 822 date format), and unbounded feed growth.
 
-### Phase 3: AI Enrichment Engine
-**Rationale:** Enrichment is the product's #1 value proposition. Must come before export so the site has enriched content. Must come after pull so there is real data to enrich. Audit/diff are cheaper (no API cost) but enrichment needs to work before export can demonstrate full value.
-**Delivers:** Enrichment engine with `--dry-run`, `--cost-estimate`, `--resume`, `--max-cost`, `--new-only` flags; Anthropic Batch API integration; prompt templates with structured JSON output; `prompt_version` and `prompt_hash` storage; token usage audit table; `mdc-encyclopedia enrich` command.
-**Uses:** Anthropic SDK (Message Batches API for 50% cost reduction), claude-sonnet-4-5 (not Opus — sufficient quality at 10x lower cost)
-**Implements:** Enrichment Engine architecture component
-**Avoids:** Pitfall: "AI enrichment cost blowout" — dry-run and cost estimate required before any full run. Pitfall: "Enrichment prompt drift" — prompt versioning schema from the start. Freeze prompt on 10-20 test datasets before full-catalog run.
+### Phase 3: Enriched Catalog Export
+**Rationale:** Third because it benefits from multi-jurisdiction data and has zero implementation risk (stdlib only, no schema changes, no new deps). Independent of field AI descriptions and can ship immediately after Phase 1 if Phase 2 encounters issues.
+**Delivers:** `site/downloads/catalog.json` (metadata envelope, jurisdiction field, AI enrichment fields, DCAT-US v1.1 field alignment) and `site/downloads/catalog.csv` (flat, pipe-delimited arrays, UTF-8 BOM for Excel on Windows); download links on About page with format and file size noted.
+**Uses:** `json` and `csv` stdlib; existing `build_site_data()` — generates inside `generate_site()` from the same `site_data` dict used for HTML.
+**Avoids:** Export-site data drift (same `site_data` dict, same function call), JSON serialization crash on non-serializable types (explicit field extraction), CSV encoding failure in Excel (UTF-8 BOM).
 
-### Phase 4: Audit + Quality Scoring
-**Rationale:** Pure Python logic with no external API calls — fast to iterate and test. Produces quality scores that can enhance enrichment prompts and are displayed on dataset pages. Architecture research specifically recommends audit before export because export consumes audit results.
-**Delivers:** Audit engine computing staleness (last updated vs declared frequency), metadata completeness (% fields filled), column documentation coverage; quality score per dataset written to audit_scores table; `mdc-encyclopedia audit` command.
-**Implements:** Audit Engine architecture component
-**Avoids:** No major pitfalls here — pure Python logic, no external dependencies.
+### Phase 4: AI Field-Level Descriptions
+**Rationale:** Last among the core features because it has the highest complexity and the only real API cost. The site delivers full value without it. Benefits from having all three jurisdictions' B+ datasets in the DB before running — more eligible columns. Prompt quality validation on a sample (5-10 datasets) must precede any full batch run.
+**Delivers:** Plain-English descriptions for all columns in ~125 B+ datasets (2,635 columns estimated pre-multi-jurisdiction); `enrich-fields` CLI command with `--dry-run`, `--limit`, and `--resume` flags; `columns.ai_description` displayed inline in dataset detail page columns table with AI badge and disclaimer; field description quality validation on sample before full batch.
+**Uses:** Existing Anthropic SDK; new `FieldEnrichmentResult` Pydantic model; new `field_prompts.py`; `columns.ai_description` column added in Phase 1 Schema V3.
+**Avoids:** Per-column API calls (30 columns per call cap), cost explosion (dry-run gate before batch), hallucination (full dataset context in prompt), PII exposure in sample values (filter by column type).
 
-### Phase 5: Diff Detection
-**Rationale:** Requires at least one prior pull to establish baseline. Cannot implement until data has been pulled once and stored. A short, focused phase that adds significant accountability value.
-**Delivers:** Snapshot comparison detecting new/removed datasets and schema changes; changes table populated in SQLite; `mdc-encyclopedia diff` command. Output consumed by the "What Changed" page in export.
-**Implements:** Diff Engine architecture component
-**Avoids:** Note that first run has no diff — this is expected behavior, not a bug.
-
-### Phase 6: Static Site Export + Search
-**Rationale:** Consumes outputs from all upstream phases (pull, enrichment, audit, diff). This is the final deliverable visible to users. Architecture research explicitly places this last. Search index sizing must be tested with realistic catalog data, not a handful of test datasets.
-**Delivers:** Jinja2 templates (base, index, dataset, category, changes, quality pages); lunr.py search index builder; `mdc-encyclopedia export` command; `mdc-encyclopedia serve` for local preview; responsive CSS with MDC branding (#003366, white, amber); client-side search.js with lazy loading.
-**Uses:** Jinja2 (template inheritance), lunr.py (pre-built index), python-slugify (clean URLs), Vanilla JS + CSS
-**Implements:** Site Builder architecture component + Static Output layer
-**Avoids:** Pitfall: "Search index too large" — index only title + keywords + department + category, measure under 500KB after first full export. Pitfall: "Enrichment output not escaped" — always use `| e` filter, never `| safe` on AI content. Pitfall: "Showing raw API field names" — map all fields to plain-English labels.
-
-### Phase 7: CI/CD — GitHub Actions Weekly Refresh
-**Rationale:** Orchestrates all commands that must already exist and be working. This is the deployment automation, not the product itself. Architecture research explicitly puts CI/CD last.
-**Delivers:** `.github/workflows/weekly-refresh.yml` cron job running pull -> audit -> diff -> optional enrich -> export -> deploy to GitHub Pages; `timeout-minutes: 30` set explicitly; graceful handling of missing `ANTHROPIC_API_KEY`; GitHub Secrets configuration.
-**Implements:** CI/CD flow from architecture data flow section
-**Avoids:** Pitfall: "GitHub Actions default timeout" — set explicit 30-minute timeout. Pitfall: "API key in repository" — GitHub Secrets only, never CLI arguments.
+### Phase 5: Site UI Polish and CI Pipeline
+**Rationale:** Depends on all prior phases being functional. Unifies the UI changes that span multiple features and confirms the full pipeline runs correctly end-to-end in GitHub Actions before release.
+**Delivers:** Jurisdiction filter dropdown on browse page (JS + template); jurisdiction badges on dataset cards; per-jurisdiction stats chips on homepage; jurisdiction field in Lunr.js search index; per-jurisdiction slug disambiguation (`/dataset/{jurisdiction}/{slug}/` URL scheme); updated CI pipeline (`pull --jurisdiction miami-dade broward city-of-miami`); feed XML validation step (`xmllint --noout`); full end-to-end pipeline test.
+**Avoids:** Slug collision across jurisdictions (jurisdiction-scoped URL scheme), search index bloat (jurisdiction as filterable field not full-text indexed content), CI shipping broken feed silently.
 
 ### Phase Ordering Rationale
 
-- **Storage first** because the schema is the contract that all other components depend on. Changing the schema after clients or enrichment are built requires cascading fixes.
-- **Pull before everything else** because you need real data to validate all downstream components. Testing enrichment with mock data masks real API response shapes.
-- **Enrichment before export** because the site without AI descriptions is not meaningfully better than the existing portals. The export is the packaging of the enrichment, not a standalone deliverable.
-- **Audit before export** because audit scores appear on dataset pages. Pure Python, no API cost — there is no reason to delay it.
-- **Diff before export** because "What Changed" page is an export template that needs the changes table populated.
-- **Export before CI/CD** because CI orchestrates commands that must already be debugged locally.
+- Multi-jurisdiction must precede all other features — RSS feed and catalog export need jurisdiction metadata baked in from their first generation; rebuilding them post-multi-jurisdiction would duplicate effort.
+- RSS before export — `feedgen` dependency validation is worth doing early; if feedgen causes environment issues, the export (stdlib-only) can ship independently as a fallback.
+- Export before field AI — export has zero risk and delivers immediate value to power users; field AI requires careful prompt engineering and a cost estimation gate.
+- Site polish last — requires all features functional before testing their integration; attempting UI polish mid-feature causes repeated template rework.
+- Schema migration (ID composite key) must happen in Phase 1 before any multi-portal data enters the DB — post-load recovery from a collision is expensive and requires re-importing enrichments.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 2 (Data Ingestion):** The Socrata SODA3 migration status for Miami-Dade specifically is uncertain (official docs say "October 2025 default" but real-world rollout may vary). ArcGIS Hub API v3 documentation is an unofficial 2019 gist — field names and pagination may have changed. Recommend a discovery spike: make 3-5 live API calls to both portals before writing client code, document actual response shapes.
-- **Phase 3 (AI Enrichment):** The optimal enrichment prompt structure (balancing output quality, token count, and structured JSON reliability) requires iteration. Recommend a prompt development sprint with 15-20 real Miami-Dade datasets before finalizing the prompt schema.
+Phases needing deeper research during planning:
+- **Phase 1:** Schema V3 migration strategy for the synthetic composite key — research the exact SQLite migration sequence (`PRAGMA foreign_keys=OFF`, table recreation with rename, FK check) against the specific foreign key relationships in the existing schema. The V1-to-V2 migration in `db.py` is the template but the primary key change is more complex than the prior migration.
+- **Phase 4:** Field enrichment prompt engineering — validate prompt output quality on 5-10 B+ datasets manually before batch run. Ambiguous single-word column names (`STATUS`, `TYPE`, `NAME`) need a confidence-flagging strategy documented before the batch.
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Storage Schema):** sqlite-utils is extremely well-documented via Context7. Schema design follows established patterns (separate tables, FK constraints, version tracking). No novel decisions.
-- **Phase 4 (Audit Engine):** Pure Python logic. Quality scoring algorithms (staleness, completeness) are straightforward to implement. Toronto's Open Data quality score methodology is publicly documented.
-- **Phase 5 (Diff Detection):** Standard SQL snapshot comparison. SQLite makes this trivial with the schema already in place.
-- **Phase 6 (Static Site Export):** Jinja2 template inheritance is well-documented. Lunr.js pre-built index pattern is documented. Main risk (index size) is mitigated by measuring after first full export.
-- **Phase 7 (CI/CD):** GitHub Actions + GitHub Pages deployment is a mature, well-documented pattern. No novel decisions.
+Phases with standard, well-documented patterns (skip research-phase):
+- **Phase 2:** RSS/Atom feed generation with feedgen v1.0.0 is thoroughly documented. The feed entry design and URL requirements are clear from PITFALLS.md.
+- **Phase 3:** JSON and CSV export via stdlib is a solved problem. DCAT-US v1.1 field mapping is documented in the official spec.
+- **Phase 5:** Static site UI additions (filter dropdowns, badges, stats chips) follow existing Jinja2/Lunr.js patterns already in the codebase. CI pipeline update is a one-line change to the pull command.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All technologies verified via Context7, PyPI, and official docs. No cross-package conflicts. lunr.py/Lunr.js version compatibility flagged as MEDIUM — verify index format compatibility before full export. |
-| Features | HIGH | Grounded in analysis of CKAN, Socrata, Magda, OpenDataSoft, Toronto quality score, academic usability research. Feature prioritization is well-reasoned and consistent with comparable civic tech tools. |
-| Architecture | HIGH | Pipeline-of-commands + baked data pattern is battle-tested (Datasette, JKAN). Component boundaries are clear and consistent across all research sources. Build order is unambiguous. |
-| Pitfalls | HIGH | Most critical pitfalls verified against official Socrata/GitHub/Anthropic docs. ArcGIS Hub pitfall has LOW-confidence source (2019 unofficial gist) but is corroborated by the API's known poor documentation. |
+| Stack | HIGH | All three portals verified via live API calls; stdlib choices are official Python docs. One STACK.md vs PITFALLS.md divergence on feedgen resolved in favor of feedgen (RFC 822 date pitfall is real; lxml concern was misdirected). |
+| Features | HIGH | All portal APIs live-verified; dataset counts confirmed (MDC 575, Broward 83, City of Miami 83); City of Miami dual-portal complication documented and explicitly scoped out. Build order validated against dependency graph in FEATURES.md. |
+| Architecture | HIGH | Existing codebase analyzed directly; OGC API Records response schema confirmed identical across all three portals; B+ dataset and column counts queried from production DB (125 datasets, 2,635 columns). |
+| Pitfalls | HIGH | Most pitfalls verified against actual codebase source (hardcoded constants confirmed in `hub_client.py` and `normalizer.py`); RFC 822 date issue confirmed against feedgen docs and W3C Feed Validator requirements; schema migration risk confirmed against SQLite documentation. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Socrata SODA3 rollout status for Miami-Dade specifically:** The SODA3 migration is documented as an October 2025 platform default, but individual domain rollout timelines vary. Before writing the SocrataClient, make 3-5 live authenticated and unauthenticated requests to `opendata.miamidade.gov/api/catalog/v1` to determine current endpoint behavior.
+- **feedgen lxml dependency claim:** STACK.md states feedgen requires lxml, but PITFALLS.md and the feedgen GitHub repo indicate the dependency is `python-dateutil`, not lxml. Before Phase 2, run `pip show feedgen` in the project environment to confirm the actual dependency tree and verify no conflict with existing packages.
 
-- **ArcGIS Hub API v3 current field schema for Miami-Dade:** The best available reference is a 2019 gist. Make live requests to `gis-mdc.opendata.arcgis.com/api/v3/datasets?page[size]=5` and document the actual response shape before building arcgis.py. The fields array, pagination metadata, and total count location may differ from 2019 documentation.
+- **Synthetic key ID format for existing data:** The migration plan prefixes existing Miami-Dade IDs as `"miami-dade:{original_id}"`. Verify whether the published site exposes dataset IDs in any external-facing URL or API (e.g., dataset page URLs, search index, API endpoints). If dataset pages use slug-based URLs externally, the internal ID change is safe. If IDs appear in page URLs, this needs a URL redirect strategy.
 
-- **lunr.py / Lunr.js index format compatibility:** lunr.py 0.8.0 claims to produce Lunr.js-compatible indexes, but this should be verified by building a test index with lunr.py and loading it with `lunr.Index.load()` in the browser before committing to this approach. If incompatible, the fallback is Fuse.js (raw JSON, no pre-build step needed).
+- **B+ dataset count post-multi-jurisdiction:** The 125 B+ datasets figure is from the current Miami-Dade-only DB. After adding Broward (83 datasets) and City of Miami (83 datasets), the B+ count could increase by 20-50%, raising Phase 4 field enrichment cost proportionally. Re-run `--dry-run` cost estimate after Phase 1 completes before committing to Phase 4.
 
-- **Miami-Dade catalog size:** The actual number of datasets on both portals is not quantified in the research. This directly affects enrichment cost estimates and search index sizing decisions. A quick initial pull (without column metadata) should be run early in Phase 2 to establish the catalog size before making cost commitments.
+- **feedgen maintenance window:** Last PyPI release December 2023. For a static site with weekly CI, a stable release is acceptable. Verify `pip install feedgen` resolves without dependency conflicts against the existing `pyproject.toml` before Phase 2 implementation.
 
-- **Enrichment prompt structure and output quality:** The prompt design (what fields to request, JSON schema for structured output, system prompt content) requires iteration on real Miami-Dade datasets. Budgeting 1-2 hours of prompt iteration with 15-20 test datasets before the first full-catalog run is recommended.
+- **City of Miami ArcGIS Hub dataset completeness:** City of Miami ArcGIS Hub has 83 datasets (GIS-focused). The Socrata portal at `data.miamigov.com` covers non-GIS datasets (budget, permits, code enforcement). If stakeholders ask about missing City of Miami datasets, have the coverage explanation ready and documented in the site's About page.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/simonw/sqlite-utils` (Context7) — FTS5 API, insert_all, enable_fts, transform for schema migration
-- `/pallets/click` (Context7) — Group/command pattern, options/arguments, decorator model
-- `/anthropics/anthropic-sdk-python` (Context7) — Message Batches API, retry behavior, RateLimitError handling
-- [PyPI: sqlite-utils 3.39](https://pypi.org/project/sqlite-utils/) — Current version, Python compat
-- [PyPI: anthropic 0.83.0](https://pypi.org/project/anthropic/) — Current version, API surface
-- [PyPI: click 8.3.1](https://pypi.org/project/click/) — Current version
-- [SODA3 migration announcement](https://support.socrata.com/hc/en-us/articles/34730618169623-SODA3-API) — Endpoint changes, token requirements
-- [SODA3 October 2025 release](https://support.socrata.com/hc/en-us/articles/35710697739799-October-2025-Product-Release) — Deployment timeline
-- [Anthropic batch processing docs](https://docs.claude.com/en/docs/build-with-claude/batch-processing) — Batch API usage, 50% cost reduction
-- [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) — 1GB site limit
-- [GitHub Actions limits](https://docs.github.com/en/actions/reference/limits) — Default 6-hour timeout
-- [Lunr.js pre-building guide](https://lunrjs.com/guides/index_prebuilding.html) — Index serialization pattern
-- [JKAN static data portal](https://github.com/timwis/jkan) — Static site data catalog proof-of-concept
-- [Datasette architecture (Architecture Notes)](https://architecturenotes.co/p/datasette-simon-willison) — Baked data pattern
+- Broward County GeoHub API: `https://geohub-bcgis.opendata.arcgis.com/api/search/v1/collections/dataset/items` — live API verified, 83 datasets, identical OGC Records schema
+- City of Miami Open Data GIS API: `https://datahub-miamigis.opendata.arcgis.com/api/search/v1/collections/dataset/items` — live API verified, 83 datasets, identical OGC Records schema
+- Miami-Dade Open Data Hub: `https://opendata.miamidade.gov` — existing portal, verified, ~575 datasets
+- [python-feedgen 1.0.0 on PyPI](https://pypi.org/project/feedgen/) — version confirmed, release date Dec 2023
+- [feedgen documentation](https://feedgen.kiesow.be/) — RSS 2.0 + Atom support, `datetime` object API
+- [W3C Feed Validation Service](https://validator.w3.org/feed/) — RSS/Atom specification requirements
+- [DCAT-US Schema v1.1](https://resources.data.gov/resources/dcat-us/) — required and optional field definitions for catalog JSON export
+- [Python stdlib docs: csv, json, xml.etree.ElementTree, datetime](https://docs.python.org/3/library/) — official documentation
+- Existing codebase: `db.py`, `hub_client.py`, `normalizer.py`, `generator.py`, `context.py`, `detector.py`, `cli.py`, `enrichment/client.py` — direct source code analysis confirming hardcoded constants and schema structure
+- Production DB query: 125 B+ datasets (105 A, 20 B), 2,635 total columns — confirmed via live DB
 
 ### Secondary (MEDIUM confidence)
-- [Socrata Discovery API docs](https://dev.socrata.com/docs/other/discovery) — Catalog endpoint, pagination (docs lag API)
-- [PyPI: lunr 0.8.0](https://pypi.org/project/lunr/) — Python Lunr port, version currency
-- [Socrata dataset count mismatch (SO)](https://stackoverflow.com/questions/58130323) — asset type filtering issue independently reproduced
-- [Lunr.js performance limits](https://www.previousnext.com.au/blog/fast-and-fuzzy-client-side-search-lunrjs-and-drupal) — Practical testing at scale
-- [Fuse.js large dataset issues (SO)](https://stackoverflow.com/questions/70984437/fuse-js-takes-10-seconds-with-semi-long-queries) — 10-second query time on large datasets
-- [Toronto data quality score](https://medium.com/open-data-toronto/towards-a-data-quality-score-in-open-data-part-1-525e59f729e9) — Quality scoring methodology
-- [SODA3 token requirements](https://munozbravo.github.io/dotgov/guides/versions/) — Third-party detailed guide
-- Academic portal usability research — Feature expectations from user studies
+- [City of Miami Socrata portal](https://data.miamigov.com/) — active Socrata platform confirmed; DNS resolution intermittently failed during research
+- [Socrata Developer Portal (City of Miami)](https://dev.socrata.com/foundry/data.miamigov.com/ub3m-qgg5) — confirms Socrata platform for `data.miamigov.com`
+- [LLM-powered data classification at Grab](https://engineering.grab.com/llm-powered-data-classification) — batch column enrichment pattern (single API call per dataset vs per column)
+- [arXiv: Using LLMs to Enrich Documentation](https://arxiv.org/html/2404.15320v1) — hallucination risks in column-level AI descriptions
+- [arXiv: Automatic database description generation](https://arxiv.org/html/2502.20657v1) — LLM column description research
 
 ### Tertiary (LOW confidence)
-- [ArcGIS Hub API v3 reference (unofficial gist)](https://gist.github.com/jgravois/1b7ec5080e992a59f65cf7a2190e4365) — 2019, best available; validate against live API before building client
-- [ArcGIS Hub API v3 gist (haoliangyu)](https://gist.github.com/haoliangyu/0d0abcccfd3b25beb8b7597b4b2fc497) — Pagination, metadata fields; unofficial
-- [Python build backends 2025](https://medium.com/@dynamicy/python-build-backends-in-2025-what-to-use-and-why-uv-build-vs-hatchling-vs-poetry-core-94dd6b92248f) — Hatchling recommendation; blog post
+- [Generative AI and Data Dictionary Descriptions (Medium)](https://medium.com/@fedenolasco/generative-ai-and-data-dictionary-descriptions-a2ba8c832afb) — single practitioner report; directionally consistent with arXiv sources
+- [arXiv: Zero-Shot Topic Classification of Column Headers](https://arxiv.org/abs/2403.00884) — column classification accuracy context; methodology differs from civic data use case
 
 ---
-*Research completed: 2026-02-24*
+*Research completed: 2026-02-26*
 *Ready for roadmap: yes*
