@@ -74,30 +74,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MULTI-01 | — | Pending |
-| MULTI-02 | — | Pending |
-| MULTI-03 | — | Pending |
-| MULTI-04 | — | Pending |
-| MULTI-05 | — | Pending |
-| MULTI-06 | — | Pending |
-| MULTI-07 | — | Pending |
-| MULTI-08 | — | Pending |
-| FEED-01 | — | Pending |
-| FEED-02 | — | Pending |
-| FEED-03 | — | Pending |
-| EXPORT-01 | — | Pending |
-| EXPORT-02 | — | Pending |
-| EXPORT-03 | — | Pending |
-| FIELD-01 | — | Pending |
-| FIELD-02 | — | Pending |
-| FIELD-03 | — | Pending |
-| FIELD-04 | — | Pending |
+| MULTI-01 | Phase 8 | Pending |
+| MULTI-02 | Phase 8 | Pending |
+| MULTI-03 | Phase 8 | Pending |
+| MULTI-04 | Phase 8 | Pending |
+| MULTI-05 | Phase 12 | Pending |
+| MULTI-06 | Phase 12 | Pending |
+| MULTI-07 | Phase 12 | Pending |
+| MULTI-08 | Phase 12 | Pending |
+| FEED-01 | Phase 9 | Pending |
+| FEED-02 | Phase 9 | Pending |
+| FEED-03 | Phase 9 | Pending |
+| EXPORT-01 | Phase 10 | Pending |
+| EXPORT-02 | Phase 10 | Pending |
+| EXPORT-03 | Phase 10 | Pending |
+| FIELD-01 | Phase 11 | Pending |
+| FIELD-02 | Phase 11 | Pending |
+| FIELD-03 | Phase 11 | Pending |
+| FIELD-04 | Phase 11 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17
+- v1.1 requirements: 18 total
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after initial definition*
+*Last updated: 2026-02-26 after roadmap creation*
