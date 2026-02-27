@@ -39,3 +39,4 @@ htmlcov/
 
 # Generated site (root-level output only)
 /site/
+__pycache__/
