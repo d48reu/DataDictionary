@@ -349,12 +349,15 @@ def upsert_dataset(conn: sqlite3.Connection, dataset: dict) -> str:
 
     conn.execute(
         """INSERT OR REPLACE INTO datasets
-        (id, source_portal, source_url, title, description, category,
-         publisher, format, created_at, updated_at, row_count, tags,
-         license, api_endpoint, bbox, download_url, metadata_json, pulled_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+        (id, jurisdiction, arcgis_id, source_portal, source_url, title,
+         description, category, publisher, format, created_at, updated_at,
+         row_count, tags, license, api_endpoint, bbox, download_url,
+         metadata_json, pulled_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
         (
             dataset["id"],
+            dataset.get("jurisdiction", "miami-dade"),
+            dataset.get("arcgis_id", dataset["id"]),
             dataset["source_portal"],
             dataset["source_url"],
             dataset["title"],
