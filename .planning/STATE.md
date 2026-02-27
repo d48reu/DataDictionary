@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 11 of 12 (AI Field-Level Descriptions)
-Plan: 1 of 2 in current phase
-Status: Plan 01 Complete
-Last activity: 2026-02-27 -- Completed 11-01 (Field Enrichment Backend)
+Plan: 2 of 2 in current phase
+Status: Phase 11 Complete
+Last activity: 2026-02-27 -- Completed 11-02 (CLI Command & UI Display)
 
-Progress: [=========================.......] 80% (v1.0 complete, phases 8-10 complete, 11-01 done)
+Progress: [============================....] 88% (v1.0 complete, phases 8-11 complete)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [=========================.......] 80% (v1.0 complete, phases 8-10 com
 | 08 (Multi-Jurisdiction Foundation) | 2/2 | 8 min | 4.0 min |
 | 09 (Atom Feed) | 1/1 | 3 min | 3.0 min |
 | 10 (Enriched Catalog Export) | 1/1 | 4 min | 4.0 min |
-| 11 (AI Field-Level Descriptions) | 1/2 | 4 min | 4.0 min |
+| 11 (AI Field-Level Descriptions) | 2/2 | 6 min | 3.0 min |
 
 *Updated after each plan completion*
 
@@ -58,6 +58,9 @@ All v1.0 decisions archived in PROJECT.md Key Decisions table.
 - 11-01: Case-insensitive fallback for column name matching in update_column_ai_descriptions
 - 11-01: Best-effort sample value fetch with 10s httpx timeout (non-blocking on failure)
 - 11-01: Batch size of 30 columns per API call for field enrichment chunking
+- 11-02: DEFAULT_MODEL from models.py used for enrich-fields command (consistent with enrich command pattern)
+- 11-02: Retry-once on API failure with 2s delay before skip-and-continue for batch resilience
+- 11-02: AI badge uses var(--mdc-blue) CSS custom property for consistent brand styling
 
 ### Pending Todos
 
@@ -71,5 +74,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 11-01-PLAN.md (Field Enrichment Backend)
+Stopped at: Completed 11-02-PLAN.md (CLI Command & UI Display) -- Phase 11 complete
 Resume file: None
