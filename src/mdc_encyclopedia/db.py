@@ -2,17 +2,22 @@
 
 import json
 import os
+import shutil
 import sqlite3
+from datetime import datetime
 
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 3
 
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS datasets (
     id TEXT PRIMARY KEY,
+    jurisdiction TEXT NOT NULL,
+    arcgis_id TEXT NOT NULL,
     source_portal TEXT NOT NULL,
     source_url TEXT,
     title TEXT,
     description TEXT,
+    ai_description TEXT,
     category TEXT,
     publisher TEXT,
     format TEXT,
@@ -25,8 +30,12 @@ CREATE TABLE IF NOT EXISTS datasets (
     bbox TEXT,
     download_url TEXT,
     metadata_json TEXT CHECK(json_valid(metadata_json) OR metadata_json IS NULL),
-    pulled_at TEXT NOT NULL DEFAULT (datetime('now'))
+    pulled_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(jurisdiction, arcgis_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_datasets_jurisdiction ON datasets(jurisdiction);
+CREATE INDEX IF NOT EXISTS idx_datasets_source_portal ON datasets(source_portal);
 
 CREATE TABLE IF NOT EXISTS columns (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,6 +109,151 @@ SCHEMA_V1_NO_JSON_CHECK = SCHEMA_V1.replace(
 )
 
 
+def _backup_database(db_path: str) -> str:
+    """Create a timestamped backup of the database before migration.
+
+    Uses shutil.copy2() to preserve file metadata. The backup is placed
+    alongside the original file with a timestamp suffix.
+
+    Args:
+        db_path: Path to the SQLite database file.
+
+    Returns:
+        Path to the backup file.
+    """
+    timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    backup_path = f"{db_path}.backup-{timestamp}"
+    shutil.copy2(db_path, backup_path)
+    print(f"Database backed up to: {backup_path}")
+    return backup_path
+
+
+def _migrate_v2_to_v3(conn: sqlite3.Connection, db_path: str) -> None:
+    """Migrate database from Schema V2 to V3.
+
+    Implements the create-copy-swap migration pattern:
+    1. Create datasets_v3 table with new schema (jurisdiction, arcgis_id, ai_description)
+    2. Copy data from datasets with 'miami-dade_' ID prefix and jurisdiction='miami-dade'
+    3. Update all child table FK references (columns, enrichments, audit_scores, changes)
+    4. Populate ai_description from enrichments.description
+    5. Drop old table, rename new table
+    6. Create indexes
+    7. Verify row counts match
+
+    Args:
+        conn: An open sqlite3.Connection.
+        db_path: Path to the database file (for logging).
+
+    Raises:
+        RuntimeError: If row counts don't match before and after migration,
+            or if foreign key check fails.
+    """
+    # Count rows BEFORE migration
+    counts_before = {}
+    for table in ["datasets", "columns", "enrichments", "audit_scores", "changes"]:
+        count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        counts_before[table] = count
+    print(f"V3 migration: row counts before: {counts_before}")
+
+    # Disable FK checks for migration
+    conn.execute("PRAGMA foreign_keys=OFF")
+
+    # Create V3 datasets table
+    conn.execute("""
+        CREATE TABLE datasets_v3 (
+            id TEXT PRIMARY KEY,
+            jurisdiction TEXT NOT NULL,
+            arcgis_id TEXT NOT NULL,
+            source_portal TEXT NOT NULL,
+            source_url TEXT,
+            title TEXT,
+            description TEXT,
+            ai_description TEXT,
+            category TEXT,
+            publisher TEXT,
+            format TEXT,
+            created_at TEXT,
+            updated_at TEXT,
+            row_count INTEGER,
+            tags TEXT,
+            license TEXT,
+            api_endpoint TEXT,
+            bbox TEXT,
+            download_url TEXT,
+            metadata_json TEXT,
+            pulled_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(jurisdiction, arcgis_id)
+        )
+    """)
+
+    # Migrate existing data with synthetic key prefix
+    conn.execute("""
+        INSERT INTO datasets_v3
+            (id, jurisdiction, arcgis_id, source_portal, source_url, title,
+             description, ai_description, category, publisher, format, created_at,
+             updated_at, row_count, tags, license, api_endpoint, bbox,
+             download_url, metadata_json, pulled_at)
+        SELECT
+            'miami-dade_' || id, 'miami-dade', id, source_portal, source_url, title,
+            description, NULL, category, publisher, format, created_at,
+            updated_at, row_count, tags, license, api_endpoint, bbox,
+            download_url, metadata_json, pulled_at
+        FROM datasets
+    """)
+
+    # Update FK references in ALL child tables
+    conn.execute("UPDATE columns SET dataset_id = 'miami-dade_' || dataset_id")
+    conn.execute("UPDATE enrichments SET dataset_id = 'miami-dade_' || dataset_id")
+    conn.execute("UPDATE audit_scores SET dataset_id = 'miami-dade_' || dataset_id")
+    conn.execute("UPDATE changes SET dataset_id = 'miami-dade_' || dataset_id")
+
+    # Populate ai_description from enrichments (denormalization)
+    conn.execute("""
+        UPDATE datasets_v3 SET ai_description = (
+            SELECT description FROM enrichments
+            WHERE enrichments.dataset_id = datasets_v3.id
+        )
+    """)
+
+    # Swap tables
+    conn.execute("DROP TABLE datasets")
+    conn.execute("ALTER TABLE datasets_v3 RENAME TO datasets")
+
+    # Create indexes
+    conn.execute("CREATE INDEX idx_datasets_jurisdiction ON datasets(jurisdiction)")
+    conn.execute("CREATE INDEX idx_datasets_source_portal ON datasets(source_portal)")
+
+    # Re-enable FK checks
+    conn.execute("PRAGMA foreign_keys=ON")
+
+    # Verify FK integrity
+    fk_violations = conn.execute("PRAGMA foreign_key_check").fetchall()
+    if fk_violations:
+        raise RuntimeError(
+            f"Foreign key violations after V3 migration: {fk_violations}"
+        )
+
+    # Count rows AFTER migration and verify they match
+    counts_after = {}
+    for table in ["datasets", "columns", "enrichments", "audit_scores", "changes"]:
+        count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        counts_after[table] = count
+
+    for table in counts_before:
+        if counts_before[table] != counts_after[table]:
+            raise RuntimeError(
+                f"Row count mismatch in '{table}' after V3 migration: "
+                f"before={counts_before[table]}, after={counts_after[table]}"
+            )
+
+    print(f"V3 migration: row counts after: {counts_after}")
+    print("V3 migration complete: all row counts verified")
+
+    # Set schema version
+    conn.execute("PRAGMA user_version=3")
+    conn.commit()
+
+
 def init_db(db_path: str) -> bool:
     """Initialize or upgrade the database schema.
 
@@ -132,7 +286,26 @@ def init_db(db_path: str) -> bool:
 
     if version < 2:
         conn.executescript(SCHEMA_V2_UPGRADE)
-        conn.execute(f"PRAGMA user_version={CURRENT_SCHEMA_VERSION}")
+        conn.execute("PRAGMA user_version=2")
+
+    if version < 3:
+        # Check if database has existing data that needs migration
+        has_data = False
+        try:
+            row_count = conn.execute("SELECT COUNT(*) FROM datasets").fetchone()[0]
+            has_data = row_count > 0
+        except sqlite3.OperationalError:
+            # datasets table doesn't exist yet (fresh DB created with V3 schema)
+            has_data = False
+
+        if has_data:
+            # Existing database with data: backup first, then migrate
+            conn.commit()  # commit any pending V2 changes before backup
+            _backup_database(db_path)
+            _migrate_v2_to_v3(conn, db_path)
+        else:
+            # Fresh database or empty: already created with V3 schema above
+            conn.execute(f"PRAGMA user_version={CURRENT_SCHEMA_VERSION}")
 
     conn.commit()
     conn.close()
@@ -494,3 +667,19 @@ def upsert_audit_score(
         ),
     )
     conn.commit()
+
+
+def get_datasets_by_jurisdiction(conn: sqlite3.Connection) -> list[dict]:
+    """Get dataset counts grouped by jurisdiction.
+
+    Args:
+        conn: An open sqlite3.Connection with row_factory=sqlite3.Row.
+
+    Returns:
+        List of dicts with keys: jurisdiction, cnt. Ordered by jurisdiction.
+    """
+    rows = conn.execute(
+        "SELECT jurisdiction, COUNT(*) as cnt "
+        "FROM datasets GROUP BY jurisdiction ORDER BY jurisdiction"
+    ).fetchall()
+    return [dict(row) for row in rows]
