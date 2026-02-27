@@ -134,4 +134,4 @@ Note: Phases 9, 10, and 11 all depend on Phase 8 but are independent of each oth
 | 9. Atom Feed | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 10. Enriched Catalog Export | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 11. AI Field-Level Descriptions | 2/2 | Complete    | 2026-02-27 | - |
-| 12. Site UI Polish and CI Pipeline | v1.1 | 0/2 | Not started | - |
+| 12. Site UI Polish and CI Pipeline | 1/2 | In Progress|  | - |
