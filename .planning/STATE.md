@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 8 of 12 (Multi-Jurisdiction Foundation)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-02-27 -- Completed 08-01 (Jurisdiction Registry + Schema V3 Migration)
+Phase: 8 of 12 (Multi-Jurisdiction Foundation) -- COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-02-27 -- Completed 08-02 (Multi-Jurisdiction Pipeline Parameterization)
 
-Progress: [===================.............] 63% (v1.0 complete, phase 8 plan 1/2 done)
+Progress: [=====================...........] 67% (v1.0 complete, phase 8 complete)
 
 ## Performance Metrics
 
@@ -27,7 +27,7 @@ Progress: [===================.............] 63% (v1.0 complete, phase 8 plan 1/
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 08 (Multi-Jurisdiction Foundation) | 1/2 | 4 min | 4.0 min |
+| 08 (Multi-Jurisdiction Foundation) | 2/2 | 8 min | 4.0 min |
 
 *Updated after each plan completion*
 
@@ -43,6 +43,9 @@ All v1.0 decisions archived in PROJECT.md Key Decisions table.
 - 08-01: YAML over JSON for jurisdiction config (supports comments, more human-editable)
 - 08-01: Synthetic composite key (jurisdiction_arcgis_id) preserves single-column FK pattern
 - 08-01: Denormalized ai_description from enrichments into datasets for faster queries
+- 08-02: Default parameters for backward compatibility in hub client and normalizer
+- 08-02: Generic department guidance for non-Miami-Dade jurisdictions (avoid incorrect assignments)
+- 08-02: PROMPT_VERSION bumped to v1.1 for template-driven prompt change
 
 ### Pending Todos
 
@@ -50,11 +53,11 @@ None.
 
 ### Blockers/Concerns
 
-- Phase 8 contains highest-risk element: Schema V3 migration with primary key change (research flag)
 - Phase 11 field enrichment cost needs re-estimation after Phase 8 adds new jurisdiction data
+- Enrichment command needs future update to pass jurisdiction context to build_system_prompt() (Phase 11 scope)
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 08-01-PLAN.md (Jurisdiction Registry + Schema V3 Migration)
+Stopped at: Completed 08-02-PLAN.md (Multi-Jurisdiction Pipeline Parameterization) -- Phase 8 complete
 Resume file: None
