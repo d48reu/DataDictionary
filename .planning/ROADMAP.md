@@ -44,11 +44,11 @@ Full details: `milestones/v1.0-ROADMAP.md`
   3. Existing Miami-Dade datasets retain all enrichment and audit data after Schema V3 migration (zero data loss verified via row counts)
   4. Datasets from different jurisdictions with identical ArcGIS IDs coexist in the database without overwriting each other
   5. `mdc-encyclopedia stats` shows dataset counts broken down by jurisdiction
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md — Jurisdiction registry config + Schema V3 migration with synthetic composite key
+- [ ] 08-02-PLAN.md — Parameterize hub client/normalizer/prompts + CLI multi-jurisdiction pull and stats
 
 ### Phase 9: Atom Feed
 **Goal**: Users can subscribe to catalog changes via a standard Atom feed that works in any feed reader
