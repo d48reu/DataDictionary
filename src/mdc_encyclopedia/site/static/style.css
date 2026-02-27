@@ -215,6 +215,23 @@ a:hover {
     color: var(--mdc-dark-gray);
 }
 
+/* ===== Jurisdiction Badges ===== */
+.jurisdiction-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.45rem;
+    border-radius: 3px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+    margin-right: 0.3rem;
+}
+
+.jurisdiction-miami-dade { background: #e3f2fd; color: #003366; }
+.jurisdiction-broward { background: #fff3e0; color: #e65100; }
+.jurisdiction-miami { background: #e8f5e9; color: #1b5e20; }
+.jurisdiction-default { background: #f5f5f5; color: #424242; }
+
 /* ===== AI Badge ===== */
 .ai-badge {
     display: inline-block;
