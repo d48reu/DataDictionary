@@ -349,12 +349,15 @@ def enrich(ctx, dry_run, resume, model, limit):
             conn.close()
             raise click.Abort() from exc
 
-    # Step 4: Build column lookup
+    # Step 4: Load jurisdiction registry for display name resolution
+    registry = load_registry()
+
+    # Step 5: Build column lookup
     columns_by_dataset = {
         ds["id"]: get_columns_for_dataset(conn, ds["id"]) for ds in unenriched
     }
 
-    # Step 5: Cost estimation
+    # Step 6: Cost estimation
     # For dry-run, we need a client for count_tokens
     if dry_run:
         try:
@@ -391,7 +394,7 @@ def enrich(ctx, dry_run, resume, model, limit):
         conn.close()
         return
 
-    # Step 6: Confirmation flow
+    # Step 7: Confirmation flow
     if cost["total_est"] > 5.0:
         click.confirm(
             f"Estimated cost exceeds $5 (${cost['total_est']:.2f}). Proceed?",
@@ -403,7 +406,7 @@ def enrich(ctx, dry_run, resume, model, limit):
             f"(under $5 threshold, auto-proceeding)[/green]"
         )
 
-    # Step 7: Enrichment loop with Rich progress
+    # Step 8: Enrichment loop with Rich progress
     enriched_count = 0
     failed_count = 0
     failed_datasets: list[tuple[str, str]] = []
@@ -421,9 +424,27 @@ def enrich(ctx, dry_run, resume, model, limit):
 
         for ds in unenriched:
             ds_title = ds.get("title", "Unknown") or "Unknown"
+
+            # Skip datasets without jurisdiction set
+            jurisdiction_slug = ds.get("jurisdiction")
+            if not jurisdiction_slug:
+                console.print(
+                    f"[yellow]\u26a0 Skipping {ds.get('title', ds['id'])}: "
+                    f"no jurisdiction set[/yellow]"
+                )
+                progress.advance(task)
+                continue
+
+            # Resolve jurisdiction slug to display name via registry
+            jurisdiction_config = registry.get(jurisdiction_slug, {})
+            display_name = jurisdiction_config.get(
+                "display_name", jurisdiction_slug.replace("-", " ").title()
+            )
+
             try:
                 result = enrich_dataset(
-                    client, model, ds, columns_by_dataset.get(ds["id"], [])
+                    client, model, ds, columns_by_dataset.get(ds["id"], []),
+                    jurisdiction=display_name,
                 )
                 insert_enrichment(conn, ds["id"], result.model_dump(), PROMPT_VERSION)
                 enriched_count += 1
@@ -440,7 +461,7 @@ def enrich(ctx, dry_run, resume, model, limit):
             # Rate limiting delay between API calls
             time.sleep(1)
 
-    # Step 8: Summary table
+    # Step 9: Summary table
     elapsed = time.time() - start_time
     elapsed_min = int(elapsed // 60)
     elapsed_sec = int(elapsed % 60)
@@ -464,7 +485,7 @@ def enrich(ctx, dry_run, resume, model, limit):
             fail_table.add_row(ds_title[:60], error[:80])
         console.print(fail_table)
 
-    # Step 9: Cleanup
+    # Step 10: Cleanup
     conn.close()
 
 

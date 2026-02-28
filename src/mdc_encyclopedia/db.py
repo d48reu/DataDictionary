@@ -455,12 +455,13 @@ def get_unenriched_datasets(conn: sqlite3.Connection) -> list[dict]:
 
     Returns:
         List of dataset dicts with keys: id, title, description,
-        category, publisher, tags, updated_at, created_at, format.
+        category, publisher, tags, updated_at, created_at, format,
+        jurisdiction.
     """
     rows = conn.execute(
         """
         SELECT d.id, d.title, d.description, d.category, d.publisher,
-               d.tags, d.updated_at, d.created_at, d.format
+               d.tags, d.updated_at, d.created_at, d.format, d.jurisdiction
         FROM datasets d
         LEFT JOIN enrichments e ON d.id = e.dataset_id
         WHERE e.id IS NULL
