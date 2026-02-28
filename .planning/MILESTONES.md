@@ -29,3 +29,33 @@
 
 ---
 
+
+## v1.1 Regional Expansion (Shipped: 2026-02-28)
+
+**Delivered:** Multi-jurisdiction coverage (Broward County, City of Miami), subscribable Atom change feeds, developer-friendly catalog exports (JSON + CSV), AI-generated column descriptions, and full UI/CI integration.
+
+**Stats:**
+- Phases: 8-13 (9 plans)
+- Files modified: 22 (source code)
+- Lines changed: +1,748 / -184
+- Lines of code: 7,298 (Python 4,861 + HTML/CSS/JS 2,260 + YAML 177)
+- Timeline: 3 days (Feb 24 → Feb 27, 2026)
+- Git range: `feat(08-01)` → `feat(13-01)`
+- Requirements: 18/18 satisfied
+
+**Key accomplishments:**
+1. Multi-jurisdiction foundation with jurisdiction registry, Schema V3 migration, synthetic composite keys, and parameterized hub client for Miami-Dade, Broward, and City of Miami
+2. Atom 1.0 change feed with autodiscovery and absolute URLs for subscribing to catalog changes
+3. DCAT-US aligned JSON and Excel-compatible CSV catalog exports with About page download links
+4. AI field-level column descriptions for B+ datasets with structured API output, chunking, and AI badge rendering
+5. Jurisdiction filter dropdown, colored badges, Lunr search integration, and multi-jurisdiction CI pipeline
+6. Tech debt closure — jurisdiction wiring through enrich command and ai_description preservation in column upserts
+
+### Known Tech Debt
+- SUMMARY.md frontmatter does not include `requirements-completed` field (INFO level, non-blocking)
+- browse.html grade CSS class mismatch carried from v1.0 (cosmetic, one-line fix)
+
+**Archives:** `milestones/v1.1-ROADMAP.md`, `milestones/v1.1-REQUIREMENTS.md`, `milestones/v1.1-MILESTONE-AUDIT.md`
+
+---
+
