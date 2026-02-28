@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Every Miami-Dade open dataset is discoverable and understandable by a non-technical resident.
-**Current focus:** Phase 12 - Site UI Polish & CI Pipeline
+**Current focus:** Phase 13 - Tech Debt: Jurisdiction Column Preservation
 
 ## Current Position
 
-Phase: 12 of 12 (Site UI Polish & CI Pipeline)
-Plan: 2 of 2 in current phase
-Status: Executing Phase 12
-Last activity: 2026-02-27 -- Completed 12-01 (Jurisdiction UI)
+Phase: 13 of 13 (Tech Debt: Jurisdiction Column Preservation)
+Plan: 1 of 1 in current phase (complete)
+Status: Phase 13 complete
+Last activity: 2026-02-28 -- Completed 13-01 (Jurisdiction Wiring & Column Preservation)
 
-Progress: [==============================..] 94% (v1.0 complete, phases 8-12 in progress)
+Progress: [================================] 100% (v1.0 complete, phases 8-13 complete)
 
 ## Performance Metrics
 
@@ -32,6 +32,7 @@ Progress: [==============================..] 94% (v1.0 complete, phases 8-12 in 
 | 10 (Enriched Catalog Export) | 1/1 | 4 min | 4.0 min |
 | 11 (AI Field-Level Descriptions) | 2/2 | 6 min | 3.0 min |
 | 12 (Site UI Polish & CI Pipeline) | 1/2 | 4 min | 4.0 min |
+| 13 (Tech Debt: Jurisdiction & Column Preservation) | 1/1 | 2 min | 2.0 min |
 
 *Updated after each plan completion*
 
@@ -68,6 +69,9 @@ All v1.0 decisions archived in PROJECT.md Key Decisions table.
 - 12-02: Enrichment gated on workflow_dispatch + enrich_ai true, preventing accidental API spend on scheduled runs
 - 12-02: enrich-fields added alongside enrich in same conditional step for single opt-in control
 - 12-02: Pull output piped to GITHUB_STEP_SUMMARY (tail -20) for concise failure reporting
+- 13-01: INSERT OR REPLACE with subquery mirrors upsert_dataset() pattern for column preservation
+- 13-01: Orphan columns deleted to match API truth rather than keeping stale records
+- 13-01: Registry-based display name resolution with title-case fallback for enrich command
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed 12-01-PLAN.md (Jurisdiction UI) -- Phase 12 Plan 01 complete
+Last session: 2026-02-28
+Stopped at: Completed 13-01-PLAN.md (Jurisdiction Wiring & Column Preservation) -- Phase 13 complete
 Resume file: None
