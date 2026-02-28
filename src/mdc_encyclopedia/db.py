@@ -397,10 +397,15 @@ def upsert_dataset(conn: sqlite3.Connection, dataset: dict) -> str:
 def upsert_columns(
     conn: sqlite3.Connection, dataset_id: str, columns: list[dict]
 ) -> int:
-    """Replace all column metadata for a dataset.
+    """Upsert column metadata for a dataset, preserving ai_* fields.
 
-    Deletes existing columns for the dataset_id first, then inserts the
-    new column definitions. This ensures a clean refresh on every pull.
+    Uses INSERT OR REPLACE with a subquery to carry forward existing
+    ai_description values during re-pull. Mirrors the upsert_dataset()
+    pattern. After upserting, deletes orphan columns that are no longer
+    present in the incoming set (matching API truth).
+
+    Note: If future ai_* columns are added to the schema, the subquery
+    must be extended to preserve them too.
 
     Args:
         conn: An open sqlite3.Connection (caller manages lifecycle).
@@ -409,15 +414,31 @@ def upsert_columns(
                  (as produced by normalizer.normalize_field).
 
     Returns:
-        Number of columns inserted.
+        Number of columns upserted.
     """
-    conn.execute("DELETE FROM columns WHERE dataset_id = ?", (dataset_id,))
-
     for col in columns:
         conn.execute(
-            "INSERT INTO columns (dataset_id, name, data_type, description) VALUES (?, ?, ?, ?)",
-            (dataset_id, col["name"], col["data_type"], col["description"]),
+            """INSERT OR REPLACE INTO columns
+            (dataset_id, name, data_type, description, ai_description)
+            VALUES (?, ?, ?, ?,
+                    (SELECT ai_description FROM columns
+                     WHERE dataset_id = ? AND name = ?))""",
+            (
+                dataset_id, col["name"], col["data_type"], col["description"],
+                dataset_id, col["name"],
+            ),
         )
+
+    # Delete orphan columns no longer present in the API response
+    if columns:
+        placeholders = ",".join("?" for _ in columns)
+        incoming_names = [col["name"] for col in columns]
+        conn.execute(
+            f"DELETE FROM columns WHERE dataset_id = ? AND name NOT IN ({placeholders})",
+            [dataset_id] + incoming_names,
+        )
+    else:
+        conn.execute("DELETE FROM columns WHERE dataset_id = ?", (dataset_id,))
 
     conn.commit()
     return len(columns)
