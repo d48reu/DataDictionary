@@ -1079,6 +1079,83 @@ a:hover {
     margin-bottom: 0.5rem;
 }
 
+/* ===== Case Study Page ===== */
+.case-study-page {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.case-study-hero {
+    padding: 2rem 0 1rem;
+}
+
+.case-study-hero .eyebrow {
+    color: var(--mdc-blue);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+}
+
+.case-study-hero h1 {
+    color: var(--mdc-blue);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.05;
+    margin-bottom: 1rem;
+    max-width: 900px;
+}
+
+.case-study-callout {
+    border-left: 4px solid var(--mdc-blue);
+    background: var(--mdc-light-blue);
+    border-radius: var(--mdc-radius);
+    color: var(--mdc-black);
+    font-size: 1.08rem;
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+}
+
+.case-study-section,
+.artifact-card {
+    background: var(--mdc-white);
+    border-radius: var(--mdc-radius);
+    box-shadow: var(--mdc-shadow);
+    margin-bottom: 1.5rem;
+    padding: 1.35rem;
+}
+
+.case-study-section h2,
+.artifact-card h2 {
+    margin-bottom: 0.75rem;
+}
+
+.case-study-section h3 {
+    color: var(--mdc-blue);
+    margin-top: 1rem;
+}
+
+.case-study-section li {
+    margin-bottom: 0.45rem;
+}
+
+.case-study-artifacts {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    margin: 1.5rem 0;
+}
+
+.artifact-card a {
+    display: inline-block;
+    font-weight: 700;
+    margin-top: 0.5rem;
+}
+
+.case-study-summary {
+    border-top: 4px solid var(--mdc-blue);
+}
+
 /* ===== Changes Page: Section Styles ===== */
 .changes-section h2 {
     padding-bottom: 0.5rem;

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Using AI to Make Public-Sector Data Understandable and Actionable{% endblock %}
+
+{% block nav_search %}{% endblock %}
+
+{% block content %}
+<article class="case-study-page">
+    <header class="case-study-hero">
+        <p class="eyebrow">AI implementation / civic data / public-sector operations</p>
+        <h1>Using AI to Make Public-Sector Data Understandable and Actionable</h1>
+        <p class="hero-subtitle">I build AI-assisted civic data and workflow systems that turn dense public-sector information into searchable, understandable, operational tools.</p>
+        <p class="case-study-callout">The goal is not to use AI as decoration. The goal is to use AI where it fits: summarizing complex source material, enriching metadata, improving search and discovery, accelerating analysis, and helping non-technical users understand what data means and how to act on it.</p>
+    </header>
+
+    <section class="case-study-section">
+        <h2>The Problem</h2>
+        <p>Public-sector information is often technically public but practically hard to use. Budgets, open-data catalogs, department documents, infrastructure records, and service workflows are spread across PDFs, ArcGIS portals, spreadsheets, internal systems, and agency-specific terminology.</p>
+        <ul>
+            <li>Residents cannot easily understand what government is funding or doing.</li>
+            <li>Staff spend time translating the same information repeatedly.</li>
+            <li>Departments maintain data that is technically available but poorly explained.</li>
+            <li>Decision-makers lack clean, plain-English views of complex systems.</li>
+            <li>Civic transparency depends on tools that most users will never touch.</li>
+        </ul>
+    </section>
+
+    <div class="case-study-artifacts">
+        <section class="artifact-card">
+            <h2>BudgetExplorer</h2>
+            <p><strong>AI-assisted civic budget transparency platform</strong> for Miami-Dade County's $13.2B FY 2025-26 budget.</p>
+            <a href="https://www.budgetexplorer.miami/" rel="noopener">View BudgetExplorer</a>
+        </section>
+        <section class="artifact-card">
+            <h2>DataDictionary</h2>
+            <p><strong>AI-enriched civic open data catalog</strong> for South Florida public datasets from ArcGIS open-data hubs.</p>
+            <a href="{{ base_url }}/" rel="noopener">Explore DataDictionary</a>
+        </section>
+    </div>
+
+    <section class="case-study-section">
+        <h2>Artifact 1: BudgetExplorer</h2>
+        <p>BudgetExplorer turns a dense public budget into an interactive, searchable, plain-English product with an interactive budget treemap, department drilldowns, full-text search, AI-generated department summaries, glossary support, a property-tax allocation calculator, PostgreSQL-backed data modeling, a Next.js / TypeScript frontend, D3/Recharts visualizations, and a Python PDF extraction and validation pipeline.</p>
+        <h3>AI Role</h3>
+        <p>AI helps convert complex budget source material into plain-English summaries that residents and non-specialists can understand. The system still depends on structured extraction, validation, data modeling, and product design; AI is one layer in the workflow, not a substitute for the workflow.</p>
+        <h3>Human Validation</h3>
+        <p>The budget data pipeline includes extraction and validation steps before publication. The point is to make AI outputs useful inside a controlled public-information workflow rather than publishing ungrounded summaries.</p>
+    </section>
+
+    <section class="case-study-section">
+        <h2>Artifact 2: DataDictionary / MDC Encyclopedia</h2>
+        <p>DataDictionary ingests ArcGIS open-data metadata from Miami-Dade, Broward, and City of Miami hubs, then publishes a searchable static encyclopedia with dataset descriptions, field-level explanations, civic use cases, keywords, relevance signals, quality audits, freshness/completeness/documentation grades, SQLite-backed processing, static HTML output, client-side search, and weekly automated refresh through GitHub Actions.</p>
+        <h3>AI Role</h3>
+        <p>AI enriches sparse or technical dataset metadata with structured explanations, use cases, keywords, and civic relevance. This makes public datasets easier to discover, evaluate, and apply.</p>
+        <h3>Human Validation</h3>
+        <p>The project includes quality scoring and structured metadata checks so the catalog does not merely summarize datasets; it also evaluates whether the underlying data is fresh, complete, and documented well enough to be useful.</p>
+    </section>
+
+    <section class="case-study-section">
+        <h2>The Implementation Pattern</h2>
+        <ol>
+            <li>Start with messy public-sector source material.</li>
+            <li>Extract or ingest the data into a structured pipeline.</li>
+            <li>Validate the data before presenting it.</li>
+            <li>Use AI to improve explanation, discovery, and usability.</li>
+            <li>Publish a searchable product that non-technical users can actually use.</li>
+            <li>Keep the output tied to source data, not generic AI-generated text.</li>
+        </ol>
+    </section>
+
+    <section class="case-study-section">
+        <h2>Public-Sector Value</h2>
+        <p>These projects show how AI can improve government operations without pretending that every problem requires a custom model. The practical value is in implementation: making public information easier to understand, reducing repeated staff translation work, improving civic data discovery, helping residents and stakeholders navigate complex systems, turning fragmented data into usable internal or public-facing tools, and creating a foundation for better reporting, triage, knowledge management, and decision support.</p>
+    </section>
+
+    <section class="case-study-section">
+        <h2>Role Fit</h2>
+        <p>This is the lane I am pursuing: <strong>AI implementation, AI product operations, and GovTech program management.</strong> My strength is translating between operational needs, stakeholder constraints, public-sector workflows, data systems, and technical implementation. I am most useful in roles where organizations need to move from vague AI interest to shipped, governed, usable workflows.</p>
+    </section>
+
+    <section class="case-study-section">
+        <h2>What I Would Improve Next</h2>
+        <ul>
+            <li>Add clearer source citations and traceability from summaries back to source records.</li>
+            <li>Add evaluation workflows for AI-generated descriptions and dataset explanations.</li>
+            <li>Add administrative review tools for approving or correcting AI outputs.</li>
+            <li>Expand search with semantic retrieval for internal knowledge-base use cases.</li>
+            <li>Build reusable templates for constituent-service triage, meeting summarization, project tracking, and public-record discovery.</li>
+        </ul>
+    </section>
+
+    <section class="case-study-section case-study-summary">
+        <h2>Summary</h2>
+        <p>BudgetExplorer shows that I can ship a public-facing AI-assisted civic data product. DataDictionary shows that I can build AI-enriched data infrastructure and governance workflows. Together, they support a practical AI career pivot: not abstract AI hype, but implementation of useful systems inside complex public-sector environments.</p>
+    </section>
+</article>
+{% endblock %}

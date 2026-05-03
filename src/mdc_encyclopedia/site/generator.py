@@ -20,7 +20,9 @@ from mdc_encyclopedia.site.search_index import build_search_index
 logger = logging.getLogger(__name__)
 
 
-def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", site_url: str = None) -> dict:
+def generate_site(
+    db_path: str, output_dir: str = "site", base_url: str = "", site_url: str = None
+) -> dict:
     """Generate the complete static site from the database.
 
     Reads DB via context.py, sets up Jinja2, renders all page templates,
@@ -74,6 +76,7 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
         "dataset",
         "changes",
         "quality",
+        "case-study",
         "about",
         "static",
     ]
@@ -87,6 +90,7 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
         "dataset_pages": 0,
         "changes_page": 0,
         "quality_page": 0,
+        "case_study_page": 0,
         "about_page": 0,
         "output_dir": os.path.abspath(output_dir),
     }
@@ -95,7 +99,9 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
     stats["homepage"] = 1
 
     _render_browse_pages(env, site_data, output_dir)
-    stats["browse_pages"] = 1 + len(site_data["categories"])  # all-datasets + per-category
+    stats["browse_pages"] = 1 + len(
+        site_data["categories"]
+    )  # all-datasets + per-category
 
     _render_dataset_pages(env, site_data, output_dir)
     stats["dataset_pages"] = len(site_data["datasets"])
@@ -106,8 +112,13 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
     _render_quality_page(env, site_data, output_dir)
     stats["quality_page"] = 1
 
+    _render_case_study_page(env, site_data, output_dir)
+    stats["case_study_page"] = 1
+
     # Build search index
-    index_stats = build_search_index(site_data["datasets"], output_dir, base_url=base_url)
+    index_stats = build_search_index(
+        site_data["datasets"], output_dir, base_url=base_url
+    )
     stats["index_size_kb"] = round(index_stats["index_size"] / 1024, 1)
     stats["data_size_kb"] = round(index_stats["data_size"] / 1024, 1)
 
@@ -115,7 +126,11 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
     _copy_static_assets(output_dir)
 
     # Catalog export (unconditional -- runs before About page so stats are available)
-    from mdc_encyclopedia.site.catalog_export import generate_catalog_json, generate_catalog_csv
+    from mdc_encyclopedia.site.catalog_export import (
+        generate_catalog_json,
+        generate_catalog_csv,
+    )
+
     json_stats = generate_catalog_json(site_data, output_dir)
     csv_stats = generate_catalog_csv(site_data, output_dir)
     stats["catalog_json_size"] = json_stats["file_size"]
@@ -125,6 +140,7 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
     # Atom feed generation (gated on site_url presence)
     if site_url:
         from mdc_encyclopedia.site.feed import generate_atom_feed
+
         feed_stats = generate_atom_feed(site_data, output_dir, site_url)
         stats["feed_entries"] = feed_stats["entry_count"]
 
@@ -138,6 +154,7 @@ def generate_site(db_path: str, output_dir: str = "site", base_url: str = "", si
         + stats["dataset_pages"]
         + stats["changes_page"]
         + stats["quality_page"]
+        + stats["case_study_page"]
         + stats["about_page"]
     )
     stats["total_pages"] = total_pages
@@ -192,9 +209,7 @@ def _render_homepage(env, site_data, output_dir):
         output_dir: Root output directory.
     """
     # Build recent datasets list: top 5 by updated_at descending
-    datasets_with_dates = [
-        ds for ds in site_data["datasets"] if ds.get("updated_at")
-    ]
+    datasets_with_dates = [ds for ds in site_data["datasets"] if ds.get("updated_at")]
     datasets_with_dates.sort(key=lambda d: d.get("updated_at", ""), reverse=True)
     recent_datasets = datasets_with_dates[:5]
 
@@ -234,7 +249,9 @@ def _render_browse_pages(env, site_data, output_dir):
     }
 
     # "Browse All Datasets" page at /browse/index.html
-    all_formats, all_publishers, all_tags, all_jurisdictions = _extract_filter_options(all_datasets)
+    all_formats, all_publishers, all_tags, all_jurisdictions = _extract_filter_options(
+        all_datasets
+    )
     context = {
         "page_title": "Browse All Datasets",
         "category_name": "Browse All Datasets",
@@ -254,7 +271,9 @@ def _render_browse_pages(env, site_data, output_dir):
     # Per-category browse pages at /browse/{category-slug}/index.html
     for cat_name, cat_datasets in categories.items():
         cat_slug = _slugify(cat_name) if cat_name else "uncategorized"
-        cat_formats, cat_publishers, cat_tags, cat_jurisdictions = _extract_filter_options(cat_datasets)
+        cat_formats, cat_publishers, cat_tags, cat_jurisdictions = (
+            _extract_filter_options(cat_datasets)
+        )
         context = {
             "page_title": cat_name,
             "category_name": cat_name,
@@ -456,6 +475,20 @@ def _render_quality_page(env, site_data, output_dir):
     }
     _render_page(
         env, "quality.html", context, os.path.join(output_dir, "quality", "index.html")
+    )
+
+
+def _render_case_study_page(env, site_data, output_dir):
+    """Render the AI implementation case study page."""
+    context = {
+        "page_title": "Using AI to Make Public-Sector Data Understandable and Actionable",
+        "generated_at": site_data["generated_at"],
+    }
+    _render_page(
+        env,
+        "case_study.html",
+        context,
+        os.path.join(output_dir, "case-study", "index.html"),
     )
 
 
